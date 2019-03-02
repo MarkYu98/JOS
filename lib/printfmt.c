@@ -112,6 +112,8 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 						ch = *(unsigned char *) fmt++;
 						if (!(ch >= '0' && ch <= '7'))
 							ch = '7';	// Reset to default
+
+						// Different RGB order for ANSI and VGA
 						clr = ch - '0';
 						clr_r = (clr & 4) >> 2;
 						clr_g = clr & 2;
