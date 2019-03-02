@@ -167,6 +167,8 @@ cga_putc(int c)
 	// if (!(c & ~0xFF))
 	// 	c |= 0x0700;
 
+	if (!cons_textclr)
+		cons_textclr = 0x0700;
 	c |= cons_textclr;
 
 	switch (c & 0xff) {

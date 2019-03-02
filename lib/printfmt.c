@@ -87,13 +87,43 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 	register int ch, err;
 	unsigned long long num;
 	int base, lflag, width, precision, altflag;
+	int clr, clr_r, clr_g, clr_b;
 	char padc;
 
 	while (1) {
 		while ((ch = *(unsigned char *) fmt++) != '%') {
-			if (ch == '\0') {
-				cons_textclr = 0x0700;
+			if (ch == '\0')
 				return;
+			if (ch == '\e' || ch == '\033' || ch == '\x1b') {
+				if ((ch = *(unsigned char *) fmt++) != '[') {
+					putch('\e', putdat);
+					putch(ch, putdat);
+					continue;
+				}
+				while ((ch = *(unsigned char *) fmt++) != 'm') {
+					switch (ch) {
+
+					case '0':
+						cons_textclr = 0x0700;
+						break;
+
+					// Foreground (text) color
+					case '3':
+						ch = *(unsigned char *) fmt++;
+						if (!(ch >= '0' && ch <= '7'))
+							ch = '7';	// Reset to default
+						clr = ch - '0';
+						clr_r = (clr & 4) >> 2;
+						clr_g = clr & 2;
+						clr_b = (clr & 1) << 2;
+						cons_textclr = (clr_r | clr_g | clr_b) << 8;
+						break;
+
+					default:
+						break;
+					}
+				}
+				continue;
 			}
 			putch(ch, putdat);
 		}
@@ -229,11 +259,11 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			printnum(putch, putdat, num, base, width, padc);
 			break;
 
-		// textcolor
+		/* // textcolor
 		case 'y':
 			num = getuint(&ap, lflag);
 			cons_textclr = num;
-			break;
+			break; */
 
 		// escaped '%' character
 		case '%':

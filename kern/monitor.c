@@ -114,7 +114,7 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-	cprintf("%y%s\n%y%s\n%y%s\n", 0x0100, "blue", 0x0200, "green", 0x0400, "red");
+	cprintf("\e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \e[37mWhite \033[0m\n");
 
 	while (1) {
 		buf = readline("K> ");
