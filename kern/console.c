@@ -5,7 +5,6 @@
 #include <inc/kbdreg.h>
 #include <inc/string.h>
 #include <inc/assert.h>
-#include <inc/textclr.h>
 
 #include <kern/console.h>
 
@@ -47,6 +46,9 @@ delay(void)
 #define   COM_LSR_TSRE	0x40	//   Transmitter off
 
 static bool serial_exists;
+
+int cons_textclr = 0x0700;
+int cons_bgclr = 0;
 
 static int
 serial_proc_data(void)
@@ -167,9 +169,8 @@ cga_putc(int c)
 	// if (!(c & ~0xFF))
 	// 	c |= 0x0700;
 
-	if (!cons_textclr)
-		cons_textclr = 0x0700;
 	c |= cons_textclr;
+	c |= cons_bgclr;
 
 	switch (c & 0xff) {
 	case '\b':

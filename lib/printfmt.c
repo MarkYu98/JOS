@@ -7,7 +7,9 @@
 #include <inc/string.h>
 #include <inc/stdarg.h>
 #include <inc/error.h>
-#include <inc/textclr.h>
+
+extern int cons_textclr;
+extern int cons_bgclr;
 
 /*
  * Space or zero padding and a field width are supported for the numeric
@@ -89,6 +91,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 	int base, lflag, width, precision, altflag;
 	int clr, clr_r, clr_g, clr_b;
 	char padc;
+	bool broken;
 
 	while (1) {
 		while ((ch = *(unsigned char *) fmt++) != '%') {
@@ -101,10 +104,12 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 					continue;
 				}
 				while ((ch = *(unsigned char *) fmt++) != 'm') {
+					broken = false;
 					switch (ch) {
 
 					case '0':
 						cons_textclr = 0x0700;
+						cons_bgclr = 0;
 						break;
 
 					// Foreground (text) color
@@ -121,9 +126,25 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 						cons_textclr = (clr_r | clr_g | clr_b) << 8;
 						break;
 
+					// Background color
+					case '4':
+						ch = *(unsigned char *) fmt++;
+						if (!(ch >= '0' && ch <= '7'))
+							ch = '0';	// Reset to default
+
+						// Different RGB order for ANSI and VGA
+						clr = ch - '0';
+						clr_r = (clr & 4) >> 2;
+						clr_g = clr & 2;
+						clr_b = (clr & 1) << 2;
+						cons_bgclr = (clr_r | clr_g | clr_b) << 12;
+						break;
+
 					default:
+						broken = true;
 						break;
 					}
+					if (broken) break;
 				}
 				continue;
 			}
