@@ -140,6 +140,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 						cons_bgclr = (clr_r | clr_g | clr_b) << 12;
 						break;
 
+					case ';':
+						break;
+
 					default:
 						broken = true;
 						break;

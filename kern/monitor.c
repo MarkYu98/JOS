@@ -59,6 +59,9 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+	int x = 1, y = 3, z = 4;
+	cprintf("x %d, y %x, z %d\n", x, y, z);
+
 	unsigned int *ebp = (unsigned int*) read_ebp();
     cprintf("Stack backtrace:\n");
 
@@ -135,7 +138,7 @@ monitor(struct Trapframe *tf)
 
 	cprintf("\n--- Testing text/background coloring for Lab1 challenge: ---\n");
 	cprintf("\e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \e[37mWhite \033[0m\n");
-	cprintf("\e[47m\e[30mWhite Background\n");
+	cprintf("\e[47;30mWhite Background\n");
 	cprintf("Black \e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \033[0m\n");
 	cprintf("--- Test finished ---\n\n");
 
