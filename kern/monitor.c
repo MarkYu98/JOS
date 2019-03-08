@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -24,7 +25,10 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "backtrace", "Display the backtrace of function calls", mon_backtrace }
+	{ "backtrace", "Display the backtrace of function calls", mon_backtrace },
+	{ "showmappings", "Show mappings of physical pages in the given physical address range", mon_showmappings },
+	{ "dumpmem", "Dump the contents of a range of memory given either a virtual or physical address range", mon_dumpmem },
+	{ "chmapperm", "change the permissions of any mapping", mon_chmapperm }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -79,6 +83,158 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int
+mon_showmappings(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
+{
+	if (argc != 3) {
+		cprintf("Wrong number of arguments!\n");
+		cprintf("Usage: showmappings begin_va end_va\n");
+		return 1;
+	}
+	ppn_t begin_vpg = strtol(argv[1], NULL, 0) >> PGSHIFT;
+	ppn_t end_vpg = strtol(argv[2], NULL, 0) >> PGSHIFT;
+	physaddr_t va;
+	pte_t *pte_p;
+
+	cprintf("VPA\t\tPPA\tPermission(Kernel/User)\n");
+	for (ppn_t i = begin_vpg; i <= end_vpg; i++) {
+		va = i << PGSHIFT;
+		pte_p = pgdir_walk(kern_pgdir, (void *) va, 0);
+		cprintf("0x%08x\t", va);
+		if (!pte_p) cprintf("NULL\t\t---\n");
+		else {
+			cprintf("0x%08x\t", PTE_ADDR(*pte_p));
+			cprintf("R%c/%c%c", (*pte_p & PTE_W) ? 'W' : '-',
+								(*pte_p & PTE_U) ? 'R' : '-',
+								((*pte_p & PTE_U) &&
+								(*pte_p & PTE_W)) ? 'W' : '-');
+			cprintf("\n");
+		}
+	}
+	return 0;
+}
+
+int
+mon_dumpmem(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
+{
+	if (argc != 4) {
+		cprintf("Wrong number of arguments!\n");
+		cprintf("Usage: dumpmem -[pv] begin_addr end_addr\n");
+		return 1;
+	}
+	if (argv[1][0] != '-' ||
+		((argv[1][1] != 'p') && (argv[1][1] != 'v'))) {
+		cprintf("Unrecognized flag: %s\n", argv[1]);
+		cprintf("Usage: dumpmem -[pv] begin_addr end_addr\n");
+		return 1;
+	}
+	physaddr_t begin_addr = strtol(argv[2], NULL, 0);
+	physaddr_t end_addr = strtol(argv[3], NULL, 0);
+
+	bool pa = (argv[1][1] == 'p');
+	if (pa) {
+		physaddr_t pgnum, offset;
+		unsigned char *va;
+		struct PageInfo *pp;
+
+		if (begin_addr & 0xf)
+			cprintf("0x%08x: ", begin_addr);
+		for (physaddr_t i = begin_addr; i < end_addr; i++) {
+			if (!(i & 0xf))
+				cprintf("\n0x%08x: ", i);
+
+			pgnum = i >> PGSHIFT;
+			offset = PGOFF(i);
+
+			va = (unsigned char *)(page2kva(&pages[pgnum]) + offset);
+			cprintf("%02x ", *va);
+		}
+		cprintf("\n");
+	}
+	else {
+		if (begin_addr & 0xf)
+			cprintf("0x%08x: ", begin_addr);
+		for (physaddr_t i = begin_addr; i < end_addr; i++) {
+			if (!(i & 0xf))
+				cprintf("\n0x%08x: ", i);
+
+			cprintf("%02x ", *(unsigned char *) i);
+		}
+		cprintf("\n");
+	}
+	return 0;
+}
+
+int
+mon_chmapperm(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
+{
+	if (argc != 4) {
+		cprintf("Wrong number of arguments!\n");
+		cprintf("Usage: chmapperm -[pv][p] [pv]addr/pagenum [UWR]/[0-7]\n");
+		return 1;
+	}
+	if (argv[1][0] != '-' ||
+		((argv[1][1] != 'p') && (argv[1][1] != 'v'))) {
+		cprintf("Unrecognized flag: %s\n", argv[1]);
+		cprintf("Usage: dumpmem -[pv] begin_addr end_addr\n");
+		return 1;
+	}
+	bool pp = (argv[1][1] == 'p');
+	bool pgnum = (argv[1][2] == 'p');
+	physaddr_t va;
+
+	ppn_t pn = strtol(argv[2], NULL, 0);
+	if (!pgnum)
+		pn = pn >> PGSHIFT;
+
+	if (pp)
+		va = (uintptr_t) page2kva(&pages[pn]);
+	else
+		va = (uintptr_t) pn << PGSHIFT;
+
+	pte_t *pte_p = pgdir_walk(kern_pgdir, (void *) va, 0);
+	if (!(*pte_p & PTE_P)) {
+		cprintf("Error: The virtual address has no current mapping.");
+		return 1;
+	}
+
+	pte_t oldpte = *pte_p;
+
+	if (argv[3][0] >= '0' && argv[3][0] <= '7') {
+		*pte_p = ((*pte_p) & ~(PTE_U | PTE_W | PTE_P)) | strtol(argv[3], NULL, 0);
+		if (!(*pte_p & PTE_P)) {
+			*pte_p |= PTE_P;
+			cprintf("Disabling a PTE is not allowed.\n");
+		}
+	}
+	else {
+		if (argv[3][0] == 'U')
+			*pte_p |= PTE_U;
+		else if (argv[3][0] == '-')
+			*pte_p &= ~PTE_U;
+		if (argv[3][1] == 'W')
+			*pte_p |= PTE_W;
+		else if (argv[3][1] == '-')
+			*pte_p &= ~PTE_W;
+		if (argv[3][2] == '-')
+			cprintf("Disabling a PTE is not allowed.\n");
+	}
+
+	cprintf("Page VA: 0x%08x\n", va);
+	cprintf("Page PA: 0x%08x\n", PTE_ADDR(*pte_p));
+	cprintf("Permission before (Kernel/User): ");
+	cprintf("R%c/%c%c\n", (oldpte & PTE_W) ? 'W' : '-',
+						(oldpte & PTE_U) ? 'R' : '-',
+						((oldpte & PTE_U) &&
+						(oldpte & PTE_W)) ? 'W' : '-');
+	cprintf("Permission now (Kernel/User): ");
+	cprintf("R%c/%c%c\n", (*pte_p & PTE_W) ? 'W' : '-',
+						(*pte_p & PTE_U) ? 'R' : '-',
+						((*pte_p & PTE_U) &&
+						(*pte_p & PTE_W)) ? 'W' : '-');
+
+	return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/
@@ -133,11 +289,13 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
+	/*
 	cprintf("\n--- Testing text/background coloring for Lab1 challenge: ---\n");
 	cprintf("\e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \e[37mWhite \033[0m\n");
 	cprintf("\e[47;30mWhite Background\n");
 	cprintf("Black \e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \033[0m\n");
 	cprintf("--- Test finished ---\n\n");
+	*/
 
 	while (1) {
 		buf = readline("K> ");
