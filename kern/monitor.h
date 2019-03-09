@@ -19,6 +19,6 @@ int mon_backtrace(int argc, char **argv, struct Trapframe *tf);
 // Added for lab2 challenge
 int mon_showmappings(int argc, char **argv, struct Trapframe *tf);
 int mon_dumpmem(int argc, char **argv, struct Trapframe *tf);
-int mon_chmapperm(int argc, char **argv, struct Trapframe *tf);
+int mon_chperm(int argc, char **argv, struct Trapframe *tf);
 
 #endif	// !JOS_KERN_MONITOR_H

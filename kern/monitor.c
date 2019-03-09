@@ -28,7 +28,7 @@ static struct Command commands[] = {
 	{ "backtrace", "Display the backtrace of function calls", mon_backtrace },
 	{ "showmappings", "Show mappings of physical pages in the given physical address range", mon_showmappings },
 	{ "dumpmem", "Dump the contents of a range of memory given either a virtual or physical address range", mon_dumpmem },
-	{ "chmapperm", "change the permissions of any mapping", mon_chmapperm }
+	{ "chperm", "change the permissions of any mapping", mon_chperm }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -166,17 +166,17 @@ mon_dumpmem(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 }
 
 int
-mon_chmapperm(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
+mon_chperm(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 {
 	if (argc != 4) {
 		cprintf("Wrong number of arguments!\n");
-		cprintf("Usage: chmapperm -[pv][p] [pv]addr/pagenum [UWR]/[0-7]\n");
+		cprintf("Usage: chperm -[pv][p] [pv]addr/pagenum [UWR]/[0-7]\n");
 		return 1;
 	}
 	if (argv[1][0] != '-' ||
 		((argv[1][1] != 'p') && (argv[1][1] != 'v'))) {
 		cprintf("Unrecognized flag: %s\n", argv[1]);
-		cprintf("Usage: dumpmem -[pv] begin_addr end_addr\n");
+		cprintf("Usage: chperm -[pv][p] [pv]addr/pagenum [UWR]/[0-7]\n");
 		return 1;
 	}
 	bool pp = (argv[1][1] == 'p');
