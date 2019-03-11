@@ -18,6 +18,8 @@ pde_t *kern_pgdir;		// Kernel's initial page directory
 struct PageInfo *pages;		// Physical page state array
 static struct PageInfo *page_free_list;	// Free list of physical pages
 
+// For lab2 challenge
+static bool PS_enabled;
 
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
@@ -54,6 +56,25 @@ i386_detect_memory(void)
 
 	cprintf("Physical memory: %uK available, base = %uK, extended = %uK\n",
 		totalmem, basemem, totalmem - basemem);
+}
+
+// For lab2 challenge
+static void
+detect_PS_support()
+{
+	uint32_t eax, ebx, ecx, edx;
+	uint32_t cr4;
+
+	cpuid(1, &eax, &ebx, &ecx, &edx);
+
+	// No.3 bit of edx represents PS support
+	PS_enabled = !!(edx & (1 << 3));
+	if (PS_enabled) {
+		// enable PSE in register cr4
+		cr4 = rcr4();
+		cr4 |= CR4_PSE;
+		lcr4(cr4);
+	}
 }
 
 
@@ -125,6 +146,9 @@ mem_init(void)
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
+
+	// Lab2 PTE_PS challenge
+	detect_PS_support();
 
 	// Remove this line when you're ready to test this function.
 	// panic("mem_init: This function is not finished\n");
@@ -364,8 +388,11 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
 	pde_t pde = pgdir[PDX(va)];
-	if (pde & PTE_P)
+	if (pde & PTE_P) {
+		if (pde & PTE_PS)
+			return &pgdir[PDX(va)];
 		return (pte_t *) KADDR(PTE_ADDR(pde)) + PTX(va);
+	}
 
 	// Page table not_exist
 	if (!create) return NULL;
@@ -392,12 +419,34 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	// Fill this function in
-	for (size_t i = 0; i < size; i += PGSIZE) {
-		pte_t *pte = pgdir_walk(pgdir, (void *) va, 1);
-		*pte = pa | PTE_P | perm;
+	// Modified to use PTE_PS for lab2 challenge
+	pte_t *pte_p;
+	if (PS_enabled && (va & (PTSIZE-1)) == (pa & (PTSIZE-1))) {
+		// handle pages that are not 4Mb aligned first
+		while (size > 0 && (va & (PTSIZE-1)) != 0) {
+			pte_p = pgdir_walk(pgdir, (void *) va, true);
+			*pte_p = pa | perm | PTE_P;
+			va += PGSIZE;
+			pa += PGSIZE;
+			size -= PGSIZE;
+		}
+
+		// handle pages that are 4Mb aligned
+		while (size >= PTSIZE) {
+			pgdir[PDX(va)] = pa | PTE_PS | perm | PTE_P;
+			va += PTSIZE;
+			pa += PTSIZE;
+			size -= PTSIZE;
+		}
+	}
+
+	// normal pages
+	while (size > 0) {
+		pte_p = pgdir_walk(pgdir, (void *) va, true);
+		*pte_p = pa | perm | PTE_P;
 		va += PGSIZE;
 		pa += PGSIZE;
+		size -= PGSIZE;
 	}
 }
 
@@ -711,6 +760,10 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pgdir = &pgdir[PDX(va)];
 	if (!(*pgdir & PTE_P))
 		return ~0;
+
+	// Modified for lab2 challenge to pass
+	if (*pgdir & PTE_PS)
+		return PTE_ADDR(*pgdir) | (PTX(va) << PGSHIFT);
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;

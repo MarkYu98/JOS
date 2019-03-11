@@ -91,24 +91,35 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 		cprintf("Usage: showmappings begin_va end_va\n");
 		return 1;
 	}
-	ppn_t begin_vpg = strtol(argv[1], NULL, 0) >> PGSHIFT;
-	ppn_t end_vpg = strtol(argv[2], NULL, 0) >> PGSHIFT;
-	physaddr_t va;
-	pte_t *pte_p;
+	physaddr_t begin_va = strtol(argv[1], NULL, 0);
+	physaddr_t end_va = strtol(argv[2], NULL, 0);
+	physaddr_t va = begin_va;
+	pte_t *pte_p = pgdir_walk(kern_pgdir, (void *) va, 0);
 
-	cprintf("VPA\t\tPPA\tPermission(Kernel/User)\n");
-	for (ppn_t i = begin_vpg; i <= end_vpg; i++) {
-		va = i << PGSHIFT;
+	if (!pte_p) va = (va >> PTXSHIFT) << PTXSHIFT;
+	else if (*pte_p & PTE_PS) va = (va >> PDXSHIFT) << PDXSHIFT;
+	else va = (va >> PTXSHIFT) << PTXSHIFT;
+
+	cprintf("VPA\t\tPPA\tPermission(Kernel/User) Page Size\n");
+
+	while (va <= end_va) {
 		pte_p = pgdir_walk(kern_pgdir, (void *) va, 0);
 		cprintf("0x%08x\t", va);
-		if (!pte_p) cprintf("NULL\t\t---\n");
+		if (!pte_p) cprintf("NULL\t\t---\t---\t\t\t---\n");
 		else {
 			cprintf("0x%08x\t", PTE_ADDR(*pte_p));
 			cprintf("R%c/%c%c", (*pte_p & PTE_W) ? 'W' : '-',
 								(*pte_p & PTE_U) ? 'R' : '-',
 								((*pte_p & PTE_U) &&
 								(*pte_p & PTE_W)) ? 'W' : '-');
-			cprintf("\n");
+			if (*pte_p & PTE_PS) {
+				cprintf("\t\t4MB\n");
+				va += PTSIZE;
+			}
+			else {
+				cprintf("\t\t4KB\n");
+				va += PGSIZE;
+			}
 		}
 	}
 	return 0;
@@ -197,6 +208,10 @@ mon_chperm(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 		cprintf("Error: The virtual address has no current mapping.");
 		return 1;
 	}
+
+	// For lab2 PTE_PS challenge
+	if (*pte_p & PTE_PS)
+		va = PDX(va) << PDXSHIFT;
 
 	pte_t oldpte = *pte_p;
 
