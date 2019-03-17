@@ -305,18 +305,16 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
-<<<<<<< HEAD
 	if (tf != NULL)
 		print_trapframe(tf);
-=======
-	/*
+
+	/* Test for lab1 challenge
 	cprintf("\n--- Testing text/background coloring for Lab1 challenge: ---\n");
 	cprintf("\e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \e[37mWhite \033[0m\n");
 	cprintf("\e[47;30mWhite Background\n");
 	cprintf("Black \e[31mRed \033[32mGreen \x1b[33mYellow \e[34mBlue \e[35mMagenta \e[36mCyan \033[0m\n");
 	cprintf("--- Test finished ---\n\n");
 	*/
->>>>>>> lab2
 
 	while (1) {
 		buf = readline("K> ");
