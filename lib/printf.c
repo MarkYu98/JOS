@@ -22,6 +22,8 @@ struct printbuf {
 	char buf[256];
 };
 
+int cons_textclr = 0x0700;
+int cons_bgclr = 0;
 
 static void
 putch(int ch, struct printbuf *b)
