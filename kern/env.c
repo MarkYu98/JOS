@@ -116,7 +116,7 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-	for (size_t i = 0; i < NENV; i++) {
+	for (ssize_t i = NENV-1; i >= 0; i--) {
 		envs[i].env_link = env_free_list;
 		env_free_list = &envs[i];
 
@@ -283,7 +283,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   (Watch out for corner-cases!)
 
 	void *rva = ROUNDDOWN(va, PGSIZE), *rend = ROUNDUP(va + len, PGSIZE);
-	while (rva != end) {
+	while (rva != rend) {
 		struct PageInfo *pp = page_alloc(0);
 		if (pp == NULL)
 			panic("region_alloc: no free pages");
@@ -349,13 +349,14 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
-	struct ELF *elfhdr = (struct ELF *) binary;
+	struct Elf *elfhdr = (struct Elf *) binary;
 	if (elfhdr->e_magic != ELF_MAGIC)
 		panic("load_icode: %p not valid ELF image!", binary);
 
 	struct Proghdr *ph, *eph;
 	ph = (struct Proghdr *)((uint8_t *)elfhdr + elfhdr->e_phoff);
 	eph = ph + elfhdr->e_phnum;
+	lcr3(PADDR(e->env_pgdir));
 	for (; ph < eph; ph++)
 		if (ph->p_type == ELF_PROG_LOAD) {
 			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
@@ -364,7 +365,7 @@ load_icode(struct Env *e, uint8_t *binary)
 			memset((void *)ph->p_va + ph->p_filesz, 0,
 					ph->p_memsz - ph->p_filesz);
 		}
-	lcr3(PADDR(e->env_pgdir));
+	lcr3(PADDR(kern_pgdir));
 	e->env_tf.tf_eip = elfhdr->e_entry;
 
 	// Now map one page for the program's initial stack
@@ -505,15 +506,13 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	if (curenv->env_status == ENV_RUNNING)
+	if (curenv != NULL && curenv->env_status == ENV_RUNNING)
 		curenv->env_status = ENV_RUNNABLE;
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++;
 	lcr3(PADDR(curenv->env_pgdir));
 
-	env_pop_tf(curenv->env_tf);
-
-	panic("env_run not yet implemented");
+	env_pop_tf(&curenv->env_tf);
 }
 
