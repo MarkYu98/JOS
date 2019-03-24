@@ -105,7 +105,10 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 	while (va <= end_va) {
 		pte_p = pgdir_walk(kern_pgdir, (void *) va, 0);
 		cprintf("0x%08x\t", va);
-		if (!pte_p) cprintf("NULL\t\t---\t---\t\t\t---\n");
+		if (!pte_p || !(*pte_p & PTE_P)) {
+			cprintf("NULL\t\t---\t---\n");
+			va += PGSIZE;
+		}
 		else {
 			cprintf("0x%08x\t", PTE_ADDR(*pte_p));
 			cprintf("R%c/%c%c", (*pte_p & PTE_W) ? 'W' : '-',
@@ -165,7 +168,7 @@ mon_dumpmem(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 	else {
 		if (begin_addr & 0xf)
 			cprintf("0x%08x: ", begin_addr);
-		for (physaddr_t i = begin_addr; i < end_addr; i++) {
+		for (uintptr_t i = begin_addr; i < end_addr; i++) {
 			if (!(i & 0xf))
 				cprintf("\n0x%08x: ", i);
 
