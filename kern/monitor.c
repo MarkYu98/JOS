@@ -108,6 +108,7 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 		cprintf("0x%08x\t", va);
 		if (!pte_p || !(*pte_p & PTE_P)) {
 			cprintf("NULL\t\t---\t---\n");
+			if (va + PTSIZE <= va) break;
 			va += PGSIZE;
 		}
 		else {
@@ -118,10 +119,12 @@ mon_showmappings(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 								(*pte_p & PTE_W)) ? 'W' : '-');
 			if (*pte_p & PTE_PS) {
 				cprintf("\t\t4MB\n");
+				if (va + PTSIZE <= va) break;
 				va += PTSIZE;
 			}
 			else {
 				cprintf("\t\t4KB\n");
+				if (va + PGSIZE <= va) break;
 				va += PGSIZE;
 			}
 		}
