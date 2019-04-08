@@ -12,6 +12,7 @@
 #include <kern/kdebug.h>
 #include <kern/trap.h>
 #include <kern/pmap.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -29,7 +30,9 @@ static struct Command commands[] = {
 	{ "backtrace", "Display the backtrace of function calls", mon_backtrace },
 	{ "showmappings", "Show mappings of physical pages in the given physical address range", mon_showmappings },
 	{ "dumpmem", "Dump the contents of a range of memory given either a virtual or physical address range", mon_dumpmem },
-	{ "chperm", "change the permissions of any mapping", mon_chperm }
+	{ "chperm", "change the permissions of any mapping", mon_chperm },
+	{ "continue", "Continue execution from a breakpoint", mon_continue },
+	{ "step", "Single step after breakpoint", mon_step }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -258,6 +261,35 @@ mon_chperm(int argc, char **argv, struct Trapframe *tf) 	// Lab2 Challenge
 	return 0;
 }
 
+/***** Lab3 breakpoint continue and single-step challenge *****/
+
+int
+mon_continue(int argc, char **argv, struct Trapframe *tf) {
+	if (!tf) {
+		cprintf("Error: No program running!\n");
+		return 1;	// Error
+	}
+
+	tf->tf_eflags &= ~(1 << 8);
+	env_run(curenv);
+
+	// should never reach here
+	return 0;
+}
+
+int
+mon_step(int argc, char **argv, struct Trapframe *tf) {
+	if (!tf) {
+		cprintf("Error: No program running!\n");
+		return 1;	// Error
+	}
+
+	tf->tf_eflags |= (1 << 8);
+	env_run(curenv);
+
+	// should never reach here
+	return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
@@ -311,7 +343,7 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
-	if (tf != NULL)
+	if (tf != NULL) // && tf->tf_trapno != T_DEBUG && tf->tf_trapno != T_BRKPT)
 		print_trapframe(tf);
 
 	/* Test for lab1 challenge

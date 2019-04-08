@@ -159,6 +159,10 @@ trap_dispatch(struct Trapframe *tf)
 		monitor(tf);
 		return;
 	}
+	if (tf->tf_trapno == T_DEBUG) {
+		monitor(tf);
+		return;
+	}
 	if (tf->tf_trapno == T_SYSCALL) {
 		tf->tf_regs.reg_eax = syscall(
 			tf->tf_regs.reg_eax,
