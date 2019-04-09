@@ -3,6 +3,33 @@
 #include <inc/syscall.h>
 #include <inc/lib.h>
 
+// Lab3 sysenter challenge
+static int32_t
+sysenter(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4)
+{
+	int32_t ret;
+
+	asm volatile(
+			"pushl %%ebp\n"
+			"movl %%esp,%%ebp\n"
+			"leal after_sysenter_label, %%esi\n"
+			"sysenter\n"
+			"after_sysenter_label:\n"
+			"popl %%ebp\n"
+		     : "=a" (ret)
+		     : "a" (num),
+		       "d" (a1),
+		       "c" (a2),
+		       "b" (a3),
+		       "D" (a4)
+		     : "%esi", "cc", "memory");
+
+	if(check && ret > 0)
+		panic("syscall %d returned %d (> 0)", num, ret);
+
+	return ret;
+}
+
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
@@ -40,24 +67,28 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 void
 sys_cputs(const char *s, size_t len)
 {
-	syscall(SYS_cputs, 0, (uint32_t)s, len, 0, 0, 0);
+	// syscall(SYS_cputs, 0, (uint32_t)s, len, 0, 0, 0);
+	sysenter(SYS_cputs, 0, (uint32_t)s, len, 0, 0);
 }
 
 int
 sys_cgetc(void)
 {
-	return syscall(SYS_cgetc, 0, 0, 0, 0, 0, 0);
+	// return syscall(SYS_cgetc, 0, 0, 0, 0, 0, 0);
+	return sysenter(SYS_cgetc, 0, 0, 0, 0, 0);
 }
 
 int
 sys_env_destroy(envid_t envid)
 {
-	return syscall(SYS_env_destroy, 1, envid, 0, 0, 0, 0);
+	// return syscall(SYS_env_destroy, 1, envid, 0, 0, 0, 0);
+	return sysenter(SYS_env_destroy, 1, envid, 0, 0, 0);
 }
 
 envid_t
 sys_getenvid(void)
 {
-	 return syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
+	// return syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
+	return sysenter(SYS_getenvid, 0, 0, 0, 0, 0);
 }
 

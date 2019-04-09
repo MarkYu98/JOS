@@ -292,7 +292,6 @@ region_alloc(struct Env *e, void *va, size_t len)
 			panic("region_alloc: %e", ret);
 		rva += PGSIZE;
 	}
-
 }
 
 //

@@ -93,3 +93,33 @@ _alltraps:
 	movw	%ax, %ds
 	pushl	%esp
 	call	trap
+
+/*
+ * lab 3 challenge: sysenter/sysexit
+ * - take care of interrupt
+ */
+
+.text
+.globl sysenter_handler
+.type name, @function
+.align 2
+sysenter_handler:
+	pushl 	%esi
+	pushl 	%ebp
+	pushl 	%edi
+	pushl 	%ebx
+	pushl 	%ecx
+	pushl 	%edx
+	pushl 	%eax
+	movw	$(GD_KD),%ax
+	movw	%ax,%es
+	movw 	%ax,%ds
+	call	syscall
+
+	movw	$(GD_UD),%bx
+	movw	%bx,%es
+	movw 	%bx,%ds
+	addl	$20,%esp
+	popl	%ecx
+	popl	%edx
+	sysexit

@@ -9,6 +9,8 @@
 #include <kern/env.h>
 #include <kern/syscall.h>
 
+extern void sysenter_handler(void);
+
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -98,6 +100,11 @@ trap_init_percpu(void)
 
 	// Load the IDT
 	lidt(&idt_pd);
+
+	// Lab3 sysenter/sysexit challenge
+	wrmsr(IA32_SYSENTER_CS, GD_KT, 0);  // IA32_SYSENTER_CS = GD_KT
+    wrmsr(IA32_SYSENTER_ESP, KSTACKTOP, 0); // IA32_SYSENTER_ESP = KSTACKTOP
+    wrmsr(IA32_SYSENTER_EIP, (uint32_t)sysenter_handler, 0);  // IA32_SYSENTER_EIP = sysenter_handler
 }
 
 void
