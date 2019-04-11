@@ -8,6 +8,9 @@
 #include <inc/stdarg.h>
 #include <inc/error.h>
 
+extern int cons_textclr;
+extern int cons_bgclr;
+
 /*
  * Space or zero padding and a field width are supported for the numeric
  * formats only.
@@ -88,12 +91,68 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 	register int ch, err;
 	unsigned long long num;
 	int base, lflag, width, precision, altflag;
+	int clr, clr_r, clr_g, clr_b;
 	char padc;
+	bool broken;
 
 	while (1) {
 		while ((ch = *(unsigned char *) fmt++) != '%') {
 			if (ch == '\0')
 				return;
+			if (ch == '\e' || ch == '\033' || ch == '\x1b') {
+				if ((ch = *(unsigned char *) fmt++) != '[') {
+					putch('\e', putdat);
+					putch(ch, putdat);
+					continue;
+				}
+				while ((ch = *(unsigned char *) fmt++) != 'm') {
+					broken = false;
+					switch (ch) {
+
+					case '0':
+						cons_textclr = 0x0700;
+						cons_bgclr = 0;
+						break;
+
+					// Foreground (text) color
+					case '3':
+						ch = *(unsigned char *) fmt++;
+						if (!(ch >= '0' && ch <= '7'))
+							ch = '7';	// Reset to default
+
+						// Different RGB order for ANSI and VGA
+						clr = ch - '0';
+						clr_r = (clr & 4) >> 2;
+						clr_g = clr & 2;
+						clr_b = (clr & 1) << 2;
+						cons_textclr = (clr_r | clr_g | clr_b) << 8;
+						break;
+
+					// Background color
+					case '4':
+						ch = *(unsigned char *) fmt++;
+						if (!(ch >= '0' && ch <= '7'))
+							ch = '0';	// Reset to default
+
+						// Different RGB order for ANSI and VGA
+						clr = ch - '0';
+						clr_r = (clr & 4) >> 2;
+						clr_g = clr & 2;
+						clr_b = (clr & 1) << 2;
+						cons_bgclr = (clr_r | clr_g | clr_b) << 12;
+						break;
+
+					case ';':
+						break;
+
+					default:
+						broken = true;
+						break;
+					}
+					if (broken) break;
+				}
+				continue;
+			}
 			putch(ch, putdat);
 		}
 
@@ -207,11 +266,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// (unsigned) octal
 		case 'o':
-			// Replace this with your code.
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			num = getuint(&ap, lflag);
+			base = 8;
+			goto number;
 
 		// pointer
 		case 'p':
@@ -229,6 +286,12 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		number:
 			printnum(putch, putdat, num, base, width, padc);
 			break;
+
+		/* // textcolor
+		case 'y':
+			num = getuint(&ap, lflag);
+			cons_textclr = num;
+			break; */
 
 		// escaped '%' character
 		case '%':

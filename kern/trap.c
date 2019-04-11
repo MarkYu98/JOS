@@ -14,6 +14,8 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+extern void sysenter_handler(void);
+
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -65,15 +67,22 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
-
 void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	extern uintptr_t idttable[];
+	for (int i = 0; i < 20; i++) {
+		if (i == T_BRKPT)
+			SETGATE(idt[i], 1, GD_KT, idttable[i], 3)
+		else
+			SETGATE(idt[i], 1, GD_KT, idttable[i], 0)
+	}
+	SETGATE(idt[T_SYSCALL], 1, GD_KT, idttable[20], 3)
 
-	// Per-CPU setup 
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -123,6 +132,11 @@ trap_init_percpu(void)
 
 	// Load the IDT
 	lidt(&idt_pd);
+
+	// Lab3 sysenter/sysexit challenge
+	wrmsr(IA32_SYSENTER_CS, GD_KT, 0);  // IA32_SYSENTER_CS = GD_KT
+    wrmsr(IA32_SYSENTER_ESP, KSTACKTOP, 0); // IA32_SYSENTER_ESP = KSTACKTOP
+    wrmsr(IA32_SYSENTER_EIP, (uint32_t)sysenter_handler, 0);  // IA32_SYSENTER_EIP = sysenter_handler
 }
 
 void
@@ -176,6 +190,29 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	if (tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_BRKPT) {
+		monitor(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_DEBUG) {
+		monitor(tf);
+		return;
+	}
+	if (tf->tf_trapno == T_SYSCALL) {
+		tf->tf_regs.reg_eax = syscall(
+			tf->tf_regs.reg_eax,
+			tf->tf_regs.reg_edx,
+			tf->tf_regs.reg_ecx,
+			tf->tf_regs.reg_ebx,
+			tf->tf_regs.reg_edi,
+			tf->tf_regs.reg_esi
+		);
+		return;
+	}
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -271,6 +308,8 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if (!(tf->tf_cs & 3))
+		panic("Kernel-mode page faults!");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

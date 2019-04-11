@@ -3,6 +3,21 @@
 
 #include <inc/types.h>
 
+#define rdmsr(msr,val1,val2) \
+	__asm__ __volatile__("rdmsr" \
+	: "=a" (val1), "=d" (val2) \
+	: "c" (msr))
+
+#define wrmsr(msr,val1,val2) \
+	__asm__ __volatile__("wrmsr" \
+	: /* no outputs */ \
+	: "c" (msr), "a" (val1), "d" (val2))
+
+/***** For lab3 sysenter challenge *****/
+#define	IA32_SYSENTER_CS	372
+#define IA32_SYSENTER_ESP	373
+#define IA32_SYSENTER_EIP	374
+
 static inline void
 breakpoint(void)
 {
