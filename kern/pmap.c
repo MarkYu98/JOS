@@ -21,7 +21,7 @@ struct PageInfo *pages;		// Physical page state array
 static struct PageInfo *page_free_list;	// Free list of physical pages
 
 // For lab2 challenge
-static bool PS_enabled;
+bool PS_enabled;
 
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
@@ -65,20 +65,26 @@ static void
 detect_PS_support()
 {
 	uint32_t eax, ebx, ecx, edx;
-	uint32_t cr4;
 
 	cpuid(1, &eax, &ebx, &ecx, &edx);
 
 	// No.3 bit of edx represents PS support
 	PS_enabled = !!(edx & (1 << 3));
+}
+
+// For lab2 challenge to work with lab4
+void enable_PS_percpu()
+{
+	uint32_t cr4;
+
 	if (PS_enabled) {
 		// enable PSE in register cr4
 		cr4 = rcr4();
 		cr4 |= CR4_PSE;
 		lcr4(cr4);
+		tlbflush();
 	}
 }
-
 
 // --------------------------------------------------------------
 // Set up memory mappings above UTOP.
@@ -152,9 +158,9 @@ mem_init(void)
 
 	// Lab2 PTE_PS challenge
 	detect_PS_support();
+	enable_PS_percpu();
 
 	// Remove this line when you're ready to test this function.
-	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -299,6 +305,12 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+	for (int i = 0; i < NCPU; i++) {
+		uintptr_t kstacktop_i = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+		boot_map_region(kern_pgdir, kstacktop_i - KSTKSIZE,
+					ROUNDUP(KSTKSIZE, PGSIZE), PADDR(percpu_kstacks[i]),
+					PTE_W | PTE_P);
+	}
 
 }
 
@@ -343,7 +355,7 @@ page_init(void)
 	page_free_list = NULL;
 	for (i = 0; i < npages; i++) {
 		pages[i].pp_ref = 0;
-		if ((i > 0 && i < npages_basemem) ||
+		if ((i > 0 && i < npages_basemem && i != (MPENTRY_PADDR >> PGSHIFT)) ||
 			(i >= (EXTPHYSMEM >> PGSHIFT) && i >= kmemtop)) {
 			pages[i].pp_link = page_free_list;
 			page_free_list = &pages[i];
@@ -635,7 +647,16 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+
+	uintptr_t curbase = base;
+	size = ROUNDUP(size, PGSIZE);
+
+	if (base + size > MMIOLIM)
+		panic("mmio_map_region: overflow MMIOLIM!");
+
+	boot_map_region(kern_pgdir, base, size, pa, PTE_PCD | PTE_PWT | PTE_W);
+	base += size;
+	return (void *) curbase;
 }
 
 static uintptr_t user_mem_check_addr;
