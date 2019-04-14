@@ -358,8 +358,8 @@ page_fault_handler(struct Trapframe *tf)
 			// First time to user exception stack
 			utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
 		}
-		if (utf && user_mem_check(curenv, (void *)utf,
-			sizeof(struct UTrapframe), PTE_W | PTE_U) == 0) {
+		if (utf) {
+			user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), PTE_W | PTE_U);
 			utf->utf_fault_va = fault_va;
 			utf->utf_err = tf->tf_err;
 			utf->utf_regs = tf->tf_regs;
