@@ -356,15 +356,14 @@ page_fault_handler(struct Trapframe *tf)
 		}
 		else if (curenv->env_tf.tf_esp <= USTACKTOP) {
 			// First time to user exception stack
-			utf = (struct UTrapframe *)(curenv->env_tf.tf_esp
-					- sizeof(struct UTrapframe));
+			utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
 		}
 		if (utf && user_mem_check(curenv, (void *)utf,
 			sizeof(struct UTrapframe), PTE_W | PTE_U) == 0) {
 			utf->utf_fault_va = fault_va;
 			utf->utf_err = tf->tf_err;
 			utf->utf_regs = tf->tf_regs;
-			utf->utf_eip = tf->tf_tip;
+			utf->utf_eip = tf->tf_eip;
 			utf->utf_eflags = tf->tf_eflags;
 			utf->utf_esp = tf->tf_esp;
 
