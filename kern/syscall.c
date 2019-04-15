@@ -243,6 +243,36 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	return 0;
 }
 
+static int
+sys_ipc_page_map(envid_t srcenvid, void *srcva,
+	     envid_t dstenvid, void *dstva, int perm)
+{
+	struct Env *srcenv, *dstenv;
+	if (envid2env(srcenvid, &srcenv, 0) == -E_BAD_ENV
+		|| envid2env(dstenvid, &dstenv, 0) == -E_BAD_ENV)
+		return -E_BAD_ENV;
+
+	if ((unsigned) srcva >= UTOP || ((unsigned) srcva & (PGSIZE-1))
+		|| (unsigned) dstva >= UTOP || ((unsigned) dstva & (PGSIZE-1)))
+		return -E_INVAL;
+	if ((perm & ~PTE_SYSCALL) || (~perm & PTE_U))
+		return -E_INVAL;
+
+	pte_t *srcpte;
+	struct PageInfo *srcpp;
+	srcpp = page_lookup(srcenv->env_pgdir, srcva, &srcpte);
+	if (!srcpp)
+		return -E_INVAL;
+
+	if (!(*srcpte & PTE_W) && (perm & PTE_W))
+		return -E_INVAL;
+
+	int errno = page_insert(dstenv->env_pgdir, srcpp, dstva, perm);
+	if (errno < 0)
+		return errno;
+	return 0;
+}
+
 // Unmap the page of memory at 'va' in the address space of 'envid'.
 // If no page is mapped, the function silently succeeds.
 //
@@ -309,7 +339,31 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+	struct Env *env;
+	if (envid2env(envid, &env, 0) == -E_BAD_ENV)
+		return -E_BAD_ENV;
+	if (!env->env_ipc_recving)
+		return -E_IPC_NOT_RECV;
+	env->env_ipc_perm = 0;
+	if ((unsigned) srcva < UTOP && (unsigned) env->env_ipc_dstva < UTOP) {
+		pte_t *pte_p;
+		struct PageInfo *pp = page_lookup(curenv->env_pgdir, srcva, &pte_p);
+		if (!pp)
+			return -E_INVAL;
+		if ((perm & PTE_W) && !(*pte_p & PTE_W))
+			return -E_INVAL;
+		int r = sys_ipc_page_map(0, srcva, envid, env->env_ipc_dstva, perm);
+		if (r < 0)
+			return r;
+		env->env_ipc_perm = perm;
+	}
+	env->env_ipc_recving = false;
+	env->env_ipc_value = value;
+	env->env_ipc_from = curenv->env_id;
+	env->env_status = ENV_RUNNABLE;
+	env->env_tf.tf_regs.reg_eax = 0;
+
+	return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -327,7 +381,14 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
+	if ((unsigned) dstva < UTOP && ((unsigned) dstva & (PGSIZE-1)))
+		return -E_INVAL;
+
+	curenv->env_ipc_recving = true;
+	curenv->env_ipc_dstva = dstva;
+	curenv->env_status = ENV_NOT_RUNNABLE;
+	sys_yield();
+
 	return 0;
 }
 
