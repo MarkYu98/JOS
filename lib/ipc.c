@@ -47,7 +47,7 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 // It should panic() on any error other than -E_IPC_NOT_RECV.
 //
 // Hint:
-//   Use sys_yield() to be CPU-friendly.
+//   !! Use sys_yield() to be CPU-friendly. !!
 //   If 'pg' is null, pass sys_ipc_try_send a value that it will understand
 //   as meaning "no page".  (Zero is not the right value.)
 void
@@ -60,6 +60,7 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 	while ((r = sys_ipc_try_send(to_env, val, pg, perm)) < 0) {
 		if (r != -E_IPC_NOT_RECV)
 			panic("sys_ipc_try_send failed: %e", r);
+		sys_yield();
 	}
 }
 
