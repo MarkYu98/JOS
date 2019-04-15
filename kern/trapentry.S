@@ -126,6 +126,8 @@ _alltraps:
 .type name, @function
 .align 2
 sysenter_handler:
+	cli				# Disable interrupts
+  	cld     		# String operations increment
 	pushl 	%esi
 	pushl 	%ebp
 	pushl 	%edi
@@ -136,7 +138,18 @@ sysenter_handler:
 	movw	$(GD_KD),%ax
 	movw	%ax,%es
 	movw 	%ax,%ds
+
+	pushl 	$(kernel_lock)
+	call 	spin_lock
+	addl	$4, %esp
+
 	call	syscall
+
+	pushl  	%eax
+	pushl 	$(kernel_lock)
+	call 	spin_unlock
+	popl	%eax
+	popl	%eax
 
 	movw	$(GD_UD),%bx
 	movw	%bx,%es
@@ -144,4 +157,5 @@ sysenter_handler:
 	addl	$20,%esp
 	popl	%ecx
 	popl	%edx
+	sti
 	sysexit
