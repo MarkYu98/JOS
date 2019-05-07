@@ -19,14 +19,14 @@
 #include <inc/trap.h>
 
 #define USED(x)		(void)(x)
-#define thisenv     (*((struct Env **) (USTACKTOP - 4)))
+#define thisenv     (*((const volatile struct Env **) (USTACKTOP - 4)))
 
 // main user program
 void	umain(int argc, char **argv);
 
 // libmain.c or entry.S
 extern const char *binaryname;
-extern const volatile struct Env *thisenv;
+// extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 
