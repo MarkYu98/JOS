@@ -19,6 +19,7 @@
 #include <inc/trap.h>
 
 #define USED(x)		(void)(x)
+#define thisenv     (*((struct Env **) (USTACKTOP - 4)))
 
 // main user program
 void	umain(int argc, char **argv);
