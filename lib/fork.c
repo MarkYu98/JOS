@@ -129,10 +129,63 @@ fork(void)
 	return cid;
 }
 
-// Challenge!
+// Lab4 Challenge!
 int
 sfork(void)
 {
-	panic("sfork not implemented");
-	return -E_INVAL;
+	int r;
+
+	// page fault handler (not really useful for sfork except stack).
+	set_pgfault_handler(pgfault);
+
+	// Create a child.
+	envid_t cid = sys_exofork();
+	if (cid < 0)
+		return cid; // Error
+	if (cid == 0) {
+		// Now the child here
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+
+	for (uintptr_t va = 0; va < USTACKTOP; va += PGSIZE) {
+		if ((uvpd[PDX(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_U)) {
+			unsigned pn = PGNUM(va);
+			pte_t pte = uvpt[pn];
+			if (va == USTACKTOP-PGSIZE) { // Normal COW for stack
+				if ((r = sys_page_map(0, (void *) va, cid, (void *) va, PTE_COW | PTE_U)) < 0)
+					return r;
+				if ((r = sys_page_map(0, (void *) va, 0, (void *) va, PTE_COW | PTE_U)) < 0)
+					return r;
+			}
+			else {
+				if (pte & PTE_COW) {
+					// First copy and make it a Write page
+					if ((r = sys_page_alloc(0, (void *) PFTEMP, PTE_U | PTE_W)) < 0)
+						panic("sfork: sys_page_alloc error: %d!", r);
+					memcpy((void *) PFTEMP, (void *) va, PGSIZE);
+					if ((r = sys_page_map(0, (void *) PFTEMP, 0, (void *) va, PTE_U | PTE_W)) < 0)
+						panic("sfork: sys_page_map error: %d!", r);
+					if ((r = sys_page_unmap(0, (void *) PFTEMP)) < 0)
+						panic("sfork: sys_page_unmap error: %d!", r);
+				}
+				// Then copy mapping to the son
+				if ((r = sys_page_map(0, (void *) va, cid, (void *) va, pte & (PTE_U | PTE_W))) < 0)
+					return r;
+			}
+		}
+	}
+
+	// Exception Stack
+	if ((r = sys_page_alloc(cid, (void *)(UXSTACKTOP-PGSIZE), PTE_U | PTE_W)) < 0)
+		return r;
+
+	extern void _pgfault_upcall(void);
+	// Copy page fault handler setup to the child.
+	if ((r = sys_env_set_pgfault_upcall(cid, _pgfault_upcall)) < 0)
+		return r;
+	// Then mark the child as runnable and return.
+	if ((r = sys_env_set_status(cid, ENV_RUNNABLE)) < 0)
+		return r;
+	return cid;
 }
