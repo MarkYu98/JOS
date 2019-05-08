@@ -30,7 +30,7 @@ static const char * const error_string[MAXERROR] =
 	[E_NO_FREE_ENV]	= "out of environments",
 	[E_FAULT]	= "segmentation fault",
 	[E_IPC_NOT_RECV]= "env is not recving",
-	[E_IPC_NO_SEND]	= "no env is trying to send to this",
+	[E_IPC_NO_SENDER]= "no env is trying to send to this",
 	[E_EOF]		= "unexpected end of file",
 };
 

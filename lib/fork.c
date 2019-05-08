@@ -25,8 +25,11 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
-	if (!(err & FEC_WR) || !(uvpt[PGNUM(addr)] & PTE_P) || !(uvpt[PGNUM(addr)] & PTE_COW))
+	if (!(err & FEC_WR) || !(uvpt[PGNUM(addr)] & PTE_P) || !(uvpt[PGNUM(addr)] & PTE_COW)) {
+		if (!(err & FEC_WR))
+			panic("pgfault: Not write! %p", addr);
 		panic("pgfault: Faulting access is not write or not to a COW page!");
+	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new

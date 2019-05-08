@@ -15,7 +15,7 @@ enum {
 	E_FAULT		,	// Memory fault
 
 	E_IPC_NOT_RECV	,	// Attempt to send to env that is not recving
-	E_IPC_NO_SEND , 	// No Env is trying to send to this env: Lab4 challenge
+	E_IPC_NO_SENDER , 	// No Env is trying to send to this env: Lab4 challenge
 	E_EOF		,	// Unexpected end of file
 
 	MAXERROR

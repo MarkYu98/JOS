@@ -345,14 +345,8 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 	if (!env->env_ipc_recving)
 		return -E_IPC_NOT_RECV;
 	env->env_ipc_perm = 0;
-	if ((unsigned) srcva < UTOP && (unsigned) env->env_ipc_dstva < UTOP) {
-		pte_t *pte_p;
-		struct PageInfo *pp = page_lookup(curenv->env_pgdir, srcva, &pte_p);
-		if (!pp)
-			return -E_INVAL;
-		if ((perm & PTE_W) && !(*pte_p & PTE_W))
-			return -E_INVAL;
-		int r = sys_ipc_page_map(0, srcva, envid, env->env_ipc_dstva, perm);
+	if ((unsigned) srcva < UTOP && (unsigned) env->env_ipc_va < UTOP) {
+		int r = sys_ipc_page_map(0, srcva, envid, env->env_ipc_va, perm);
 		if (r < 0)
 			return r;
 		env->env_ipc_perm = perm;
@@ -385,7 +379,7 @@ sys_ipc_recv(void *dstva)
 		return -E_INVAL;
 
 	curenv->env_ipc_recving = true;
-	curenv->env_ipc_dstva = dstva;
+	curenv->env_ipc_va = dstva;
 	curenv->env_status = ENV_NOT_RUNNABLE;
 	sys_yield();
 
