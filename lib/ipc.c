@@ -38,8 +38,6 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 	if (perm_store)
 		*perm_store = thisenv->env_ipc_perm;
 	return thisenv->env_ipc_value;
-	panic("ipc_recv not implemented");
-	return 0;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
