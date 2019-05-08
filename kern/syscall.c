@@ -297,6 +297,54 @@ sys_page_unmap(envid_t envid, void *va)
 	return 0;
 }
 
+// Try to receive from sender_list in 'recenv'
+// Return 0 on success, < 0 on error.
+// Errors are:
+//  -E_IPC_NOT_RECV if dstenv is not currently receiving
+//  -E_IPC_NO_SENDER if no env is trying to send to dstenv
+//  -E_NO_MEM if there's not enough memory to map srcva in envid's
+//      address space.
+static int
+ipc_try_recv(struct Env *recenv)
+{
+    struct Env *sender = recenv->sender_list_head;
+    struct PageInfo *pp;
+    int r;
+
+    if (!recenv->env_ipc_recving)
+        return -E_IPC_NOT_RECV;
+    if (sender == NULL)
+        return -E_IPC_NO_SENDER;
+
+    if ((uintptr_t)sender->env_ipc_va < UTOP &&
+        (uintptr_t)recenv->env_ipc_va < UTOP) {
+        r = sys_ipc_page_map(sender->env_id, sender->env_ipc_va,
+                             recenv->env_id, recenv->env_ipc_va,
+                             sender->env_ipc_perm);
+        if (r < 0) {
+            sender->env_ipc_sending = false;
+            sender->env_status = ENV_RUNNABLE;
+            sender->env_tf.tf_regs.reg_eax = r;
+            return r;
+        }
+        recenv->env_ipc_perm = sender->env_ipc_perm;
+    }
+
+    sender->env_ipc_sending = false;
+    sender->env_status = ENV_RUNNABLE;
+    sender->env_tf.tf_regs.reg_eax = 0;  // sys_ipc_try_send return 0
+
+    recenv->env_ipc_recving = false;
+    recenv->env_status = ENV_RUNNABLE;
+    recenv->env_ipc_from = sender->env_id;
+    recenv->env_ipc_value = sender->env_ipc_value;
+    recenv->env_tf.tf_regs.reg_eax = 0;  // sys_ipc_recv return 0
+
+    recenv->sender_list_head = sender->env_link;
+
+    return 0;
+}
+
 // Try to send 'value' to the target env 'envid'.
 // If srcva < UTOP, then also send page currently mapped at 'srcva',
 // so that receiver gets a duplicate mapping of the same page.
@@ -338,26 +386,46 @@ sys_page_unmap(envid_t envid, void *va)
 static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
-	// LAB 4: Your code here.
-	struct Env *env;
-	if (envid2env(envid, &env, 0) == -E_BAD_ENV)
-		return -E_BAD_ENV;
-	if (!env->env_ipc_recving)
-		return -E_IPC_NOT_RECV;
-	env->env_ipc_perm = 0;
-	if ((unsigned) srcva < UTOP && (unsigned) env->env_ipc_va < UTOP) {
-		int r = sys_ipc_page_map(0, srcva, envid, env->env_ipc_va, perm);
-		if (r < 0)
-			return r;
-		env->env_ipc_perm = perm;
-	}
-	env->env_ipc_recving = false;
-	env->env_ipc_value = value;
-	env->env_ipc_from = curenv->env_id;
-	env->env_status = ENV_RUNNABLE;
-	env->env_tf.tf_regs.reg_eax = 0;
+    // LAB 4: Your code here.
+    struct Env *env;
+    if (envid2env(envid, &env, 0) == -E_BAD_ENV)
+        return -E_BAD_ENV;
+    // if (!env->env_ipc_recving)
+    //  return -E_IPC_NOT_RECV;
 
-	return 0;
+    if ((unsigned) srcva < UTOP) {
+        if ((uintptr_t)srcva & (PGSIZE - 1))
+            return -E_INVAL;
+        if ((perm & ~PTE_SYSCALL) || (~perm & PTE_U))
+            return -E_INVAL;
+        pte_t *srcpte;
+        struct PageInfo *srcpp;
+        srcpp = page_lookup(curenv->env_pgdir, srcva, &srcpte);
+        if (!srcpp)
+            return -E_INVAL;
+
+        if (!(*srcpte & PTE_W) && (perm & PTE_W))
+            return -E_INVAL;
+    }
+
+    curenv->env_ipc_sending = true;
+    curenv->env_status = ENV_NOT_RUNNABLE;
+    curenv->env_ipc_value = value;
+    curenv->env_ipc_va = srcva;
+    curenv->env_ipc_perm = perm;
+
+    curenv->env_link = NULL;
+    if (!env->sender_list_head) {
+        env->sender_list_head = env->sender_list_tail = curenv;
+    }
+    else {
+        env->sender_list_tail->env_link = curenv;
+        env->sender_list_tail = curenv;
+    }
+
+    ipc_try_recv(env);
+
+    sched_yield();
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -374,15 +442,18 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 static int
 sys_ipc_recv(void *dstva)
 {
-	// LAB 4: Your code here.
-	if ((unsigned) dstva < UTOP && ((unsigned) dstva & (PGSIZE-1)))
-		return -E_INVAL;
+    // LAB 4: Your code here.
+    if ((uintptr_t) dstva < UTOP && ((uintptr_t) dstva & (PGSIZE-1)))
+        return -E_INVAL;
 
-	curenv->env_ipc_recving = true;
-	curenv->env_ipc_va = dstva;
-	curenv->env_status = ENV_NOT_RUNNABLE;
+    curenv->env_ipc_recving = true;
+    curenv->env_ipc_va = dstva;
+    curenv->env_status = ENV_NOT_RUNNABLE;
 
-	sched_yield();
+    if (ipc_try_recv(curenv) == 0)
+        return 0;
+
+    sched_yield();
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
