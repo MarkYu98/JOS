@@ -90,6 +90,9 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
+	// For Lab4 FPU challenge
+	uint32_t cr4;
+
 	// The example code here sets up the Task State Segment (TSS) and
 	// the TSS descriptor for CPU 0. But it is incorrect if we are
 	// running on other CPUs because each CPU has its own kernel stack.
@@ -138,6 +141,11 @@ trap_init_percpu(void)
 	wrmsr(IA32_SYSENTER_CS, GD_KT, 0);  // IA32_SYSENTER_CS = GD_KT
     wrmsr(IA32_SYSENTER_ESP, kstacktop_i, 0); // IA32_SYSENTER_ESP = kstacktop_i
     wrmsr(IA32_SYSENTER_EIP, (uint32_t)sysenter_handler, 0);  // IA32_SYSENTER_EIP = sysenter_handler
+
+    // lab4 FPU challenge: enable OSFXSR
+	cr4 = rcr4();
+	cr4 |= 1 << 9;  // OSFXSR is 9th bit of CR4
+	lcr4(cr4);
 }
 
 void
@@ -270,6 +278,9 @@ trap(struct Trapframe *tf)
 		// LAB 4: Your code here.
 		assert(curenv);
 		lock_kernel();
+
+		// Lab4 FPU Challenge: store FPU, MMX and SSE registers
+		asm volatile("fxsave %0" : "=m" (*curenv->fxsave));
 
 		// Garbage collect if current enviroment is a zombie
 		if (curenv->env_status == ENV_DYING) {

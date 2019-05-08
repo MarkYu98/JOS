@@ -540,6 +540,9 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 	lcr3(PADDR(curenv->env_pgdir));
 
+	// Lab4 FPU Challenge: restore FPU, MMX and SSE registers
+	asm volatile("fxrstor %0" :: "m" (*curenv->fxsave));
+
 	env_pop_tf(&curenv->env_tf);
 }
 
