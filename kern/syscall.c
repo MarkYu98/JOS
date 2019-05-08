@@ -381,9 +381,8 @@ sys_ipc_recv(void *dstva)
 	curenv->env_ipc_recving = true;
 	curenv->env_ipc_va = dstva;
 	curenv->env_status = ENV_NOT_RUNNABLE;
-	sys_yield();
 
-	return 0;
+	sched_yield();
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
