@@ -4,7 +4,7 @@
 #include <kern/env.h>
 #include <kern/pmap.h>
 #include <kern/monitor.h>
-#define SEED 1
+#define SEED 	1857460923
 
 void sched_halt(void);
 
