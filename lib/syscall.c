@@ -135,6 +135,13 @@ sys_env_set_pgfault_upcall(envid_t envid, void *upcall)
 }
 
 int
+sys_env_set_tickets(envid_t envid, int tickets)
+{
+	// return syscall(SYS_env_set_status, 1, envid, status, 0, 0, 0);
+	return sysenter(SYS_env_set_tickets, 1, envid, tickets, 0, 0);
+}
+
+int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, int perm)
 {
 	// Lab4 non-loop ipc_send challenge: Does not return immediately, cannot use sysenter

@@ -29,6 +29,9 @@ typedef int32_t envid_t;
 #define NENV			(1 << LOG2NENV)
 #define ENVX(envid)		((envid) & (NENV - 1))
 
+// Lab4 lottery scheduling challenge
+#define ENV_DEFAULT_TICKETS	5
+
 // Values of env_status in struct Env
 enum {
 	ENV_FREE = 0,
@@ -71,6 +74,9 @@ struct Env {
 	envid_t env_ipc_from;		// envid of the sender
 	int env_ipc_perm;		// Perm of page mapping received
 	struct Env *sender_list_head, *sender_list_tail;	// for non-loop ipc_send challenge
+
+	// Lab4 lottery scheduling challenge
+	int env_tickets;
 };
 
 #endif // !JOS_INC_ENV_H

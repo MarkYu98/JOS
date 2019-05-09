@@ -273,6 +273,9 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_ipc_sending = 0;
 	e->sender_list_head = e->sender_list_tail = NULL;
 
+	// Lab4 lottery scheduling challenge: default 5 tickets
+	e->env_tickets = ENV_DEFAULT_TICKETS;
+
 	// commit the allocation
 	env_free_list = e->env_link;
 	*newenv_store = e;
