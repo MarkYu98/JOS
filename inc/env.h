@@ -69,7 +69,7 @@ struct Env {
 	bool env_ipc_recving;		// Env is blocked receiving
 	bool env_ipc_sending;		// Env is blocked sending, for non-loop ipc_send challenge
 	void *env_ipc_va;			// VA of sended page or at which to map received page
-	uint32_t env_ipc_value;		// Data value sent to us
+	uint32_t env_ipc_value;		// Data value to send or received
 	envid_t env_ipc_from;		// envid of the sender
 	int env_ipc_perm;		// Perm of page mapping received
 	struct Env *sender_list_head, *sender_list_tail;	// for non-loop ipc_send challenge
