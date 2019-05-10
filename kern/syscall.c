@@ -468,8 +468,8 @@ sys_env_set_tickets(envid_t envid, int tickets)
 		return -E_BAD_ENV;
 
 	tickets &= 0xff;
-	//if (tickets == 0)
-	//	tickets = ENV_DEFAULT_TICKETS; // default
+	if (tickets == 0)
+		tickets = ENV_DEFAULT_TICKETS; // default
 
 	env->env_tickets = tickets;
 	return 0;

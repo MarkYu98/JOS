@@ -48,7 +48,7 @@ enum EnvType {
 
 struct Env {
 	struct Trapframe env_tf;	// Saved registers
-	struct Env *env_link;		// Next free Env
+	struct Env *env_link;		// Next free Env or next in sender_list
 	envid_t env_id;			// Unique environment identifier
 	envid_t env_parent_id;		// env_id of this env's parent
 	enum EnvType env_type;		// Indicates special system environments
@@ -68,7 +68,6 @@ struct Env {
 	// Lab 4 IPC
 	bool env_ipc_recving;		// Env is blocked receiving
 	bool env_ipc_sending;		// Env is blocked sending, for non-loop ipc_send challenge
-	// void *env_ipc_srcva;		// VA of sended page, for non-loop ipc_send challenge
 	void *env_ipc_va;			// VA of sended page or at which to map received page
 	uint32_t env_ipc_value;		// Data value sent to us
 	envid_t env_ipc_from;		// envid of the sender
