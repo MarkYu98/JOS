@@ -20,7 +20,7 @@
 .globl _start
 _start:
 	// See if we were started with arguments on the stack
-	cmpl $USTACKTOP, %esp
+	cmpl $USTACKTOP-4, %esp
 	jne args_exist
 
 	// If not, push dummy argc/argv arguments.

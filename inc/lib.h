@@ -22,13 +22,14 @@
 #include <inc/args.h>
 
 #define USED(x)		(void)(x)
+#define thisenv     (*((const volatile struct Env **) (USTACKTOP - 4)))
 
 // main user program
 void	umain(int argc, char **argv);
 
 // libmain.c or entry.S
 extern const char *binaryname;
-extern const volatile struct Env *thisenv;
+// extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 
@@ -51,6 +52,8 @@ static envid_t sys_exofork(void);
 int	sys_env_set_status(envid_t env, int status);
 int	sys_env_set_trapframe(envid_t env, struct Trapframe *tf);
 int	sys_env_set_pgfault_upcall(envid_t env, void *upcall);
+// Lab4 lottery scheduling challenge
+int sys_env_set_tickets(envid_t env, int tickets);
 int	sys_page_alloc(envid_t env, void *pg, int perm);
 int	sys_page_map(envid_t src_env, void *src_pg,
 		     envid_t dst_env, void *dst_pg, int perm);

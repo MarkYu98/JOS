@@ -26,7 +26,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels. 
+// them to switch privilege levels.
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -119,6 +119,16 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	for (ssize_t i = NENV-1; i >= 0; i--) {
+		envs[i].env_link = env_free_list;
+		env_free_list = &envs[i];
+
+		envs[i].env_id = 0;
+		envs[i].env_type = ENV_TYPE_USER;
+		envs[i].env_status = ENV_FREE;
+		envs[i].env_runs = 0;
+		envs[i].env_pgdir = NULL;
+	}
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -182,6 +192,10 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+	e->env_pgdir = (pde_t *) page2kva(p);
+	p->pp_ref++;
+	memcpy(e->env_pgdir + PDX(UTOP), kern_pgdir + PDX(UTOP),
+				PGSIZE - PDX(UTOP) * sizeof(pde_t));
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -241,18 +255,26 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_ds = GD_UD | 3;
 	e->env_tf.tf_es = GD_UD | 3;
 	e->env_tf.tf_ss = GD_UD | 3;
-	e->env_tf.tf_esp = USTACKTOP;
+	e->env_tf.tf_esp = USTACKTOP - 4;
 	e->env_tf.tf_cs = GD_UT | 3;
 	// You will set e->env_tf.tf_eip later.
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	e->env_tf.tf_eflags |= FL_IF;
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
 
 	// Also clear the IPC receiving flag.
 	e->env_ipc_recving = 0;
+
+	// And for Lab4 non-loop ipc_send challenge
+	e->env_ipc_sending = 0;
+	e->sender_list_head = e->sender_list_tail = NULL;
+
+	// Lab4 lottery scheduling challenge: default 5 tickets
+	e->env_tickets = ENV_DEFAULT_TICKETS;
 
 	// commit the allocation
 	env_free_list = e->env_link;
@@ -279,6 +301,17 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+
+	void *rva = ROUNDDOWN(va, PGSIZE), *rend = ROUNDUP(va + len, PGSIZE);
+	while (rva != rend) {
+		struct PageInfo *pp = page_alloc(0);
+		if (pp == NULL)
+			panic("region_alloc: no free pages");
+		int ret = page_insert(e->env_pgdir, pp, rva, PTE_W | PTE_U);
+		if (ret != 0)
+			panic("region_alloc: %e", ret);
+		rva += PGSIZE;
+	}
 }
 
 //
@@ -335,11 +368,30 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+	struct Elf *elfhdr = (struct Elf *) binary;
+	if (elfhdr->e_magic != ELF_MAGIC)
+		panic("load_icode: %p not valid ELF image!", binary);
+
+	struct Proghdr *ph, *eph;
+	ph = (struct Proghdr *)((uint8_t *)elfhdr + elfhdr->e_phoff);
+	eph = ph + elfhdr->e_phnum;
+	lcr3(PADDR(e->env_pgdir));
+	for (; ph < eph; ph++)
+		if (ph->p_type == ELF_PROG_LOAD) {
+			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+			memcpy((void *)ph->p_va, (uint8_t *)elfhdr + ph->p_offset,
+					ph->p_filesz);
+			memset((void *)ph->p_va + ph->p_filesz, 0,
+					ph->p_memsz - ph->p_filesz);
+		}
+	lcr3(PADDR(kern_pgdir));
+	e->env_tf.tf_eip = elfhdr->e_entry;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	region_alloc(e, (void *)(USTACKTOP - PGSIZE), PGSIZE);
 }
 
 //
@@ -353,6 +405,10 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	struct Env *e;
+	env_alloc(&e, 0);
+	load_icode(e, binary);
+	e->env_type = type;
 
 	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
 	// LAB 5: Your code here.
@@ -447,6 +503,7 @@ env_pop_tf(struct Trapframe *tf)
 {
 	// Record the CPU we are running on for user-space debugging
 	curenv->env_cpunum = cpunum();
+	unlock_kernel();
 
 	asm volatile(
 		"\tmovl %0,%%esp\n"
@@ -486,7 +543,16 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+	if (curenv != NULL && curenv->env_status == ENV_RUNNING)
+		curenv->env_status = ENV_RUNNABLE;
+	curenv = e;
+	curenv->env_status = ENV_RUNNING;
+	curenv->env_runs++;
+	lcr3(PADDR(curenv->env_pgdir));
 
-	panic("env_run not yet implemented");
+	// Lab4 FPU Challenge: restore FPU, MMX and SSE registers
+	asm volatile("fxrstor %0" :: "m" (*curenv->fxsave));
+
+	env_pop_tf(&curenv->env_tf);
 }
 
