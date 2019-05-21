@@ -146,7 +146,7 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 		return -E_INVAL;
 	if (filebno < NDIRECT) {
 		if (ppdiskbno)
-			*ppdiskbno = f->f_direct[filebno];
+			*ppdiskbno = &f->f_direct[filebno];
 	}
 	else {
 		if (!f->f_indirect) {
@@ -158,7 +158,7 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 			f->f_indirect = newblk;
 		}
 		if (ppdiskbno)
-			*ppdiskbno = (uintptr_t) diskaddr(f->f_indirect) + (filebno - NDIRECT);
+			*ppdiskbno = (uint32_t *) diskaddr(f->f_indirect) + (filebno - NDIRECT);
 	}
 	return 0;
 }
