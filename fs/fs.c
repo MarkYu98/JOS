@@ -62,7 +62,14 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	uint32_t blockno = (super->s_nblocks - 1) / BLKBITSIZE + 3;
+	for (; blockno < super->s_nblocks; blockno++) {
+		if (bitmap[blockno/32] & (1<<(blockno%32))) {
+			bitmap[blockno/32] &= ~(1<<(blockno%32));
+			flush_block((void *)DISKMAP + (2 + blockno / BLKBITSIZE) * BLKSIZE);
+			return blockno;
+		}
+	}
 	return -E_NO_DISK;
 }
 
@@ -112,7 +119,7 @@ fs_init(void)
 	// Set "bitmap" to the beginning of the first bitmap block.
 	bitmap = diskaddr(2);
 	check_bitmap();
-	
+
 }
 
 // Find the disk block number slot for the 'filebno'th block in file 'f'.
