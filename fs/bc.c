@@ -49,7 +49,7 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 5: you code here:
 	void *va = (void *) ROUNDDOWN(addr, PGSIZE);
-	if (r = ide_read(blockno << 3, va, 8) < 0)
+	if ((r = ide_read(blockno << 3, va, 8)) < 0)
 		panic("in bc_pgfault, ide_read: %e", r);
 
 	// Clear the dirty bit for the disk block page since we just read the
