@@ -358,16 +358,13 @@ kbd_proc_data(void)
 	shift ^= togglecode[data];
 
 	c = charcode[shift & (CTL | SHIFT)][data];
+	cprintf("It's: %c\n", c);
 	if (shift & CAPSLOCK) {
 		if ('a' <= c && c <= 'z')
 			c += 'A' - 'a';
 		else if ('A' <= c && c <= 'Z')
 			c += 'a' - 'A';
 	}
-	if (c == 'a')
-		c = 'b';
-	else if (c == 'b')
-		c = 'a';
 
 	// Process special keys
 	// Ctrl-Alt-Del: reboot
