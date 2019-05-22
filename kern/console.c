@@ -364,6 +364,10 @@ kbd_proc_data(void)
 		else if ('A' <= c && c <= 'Z')
 			c += 'a' - 'A';
 	}
+	if (c == 'a')
+		c = 'b';
+	else if (c == 'b')
+		c = 'a';
 
 	// Process special keys
 	// Ctrl-Alt-Del: reboot
