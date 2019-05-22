@@ -318,7 +318,7 @@ mon_showtime(int argc, char **argv, struct Trapframe *tf) {
 
 	outb(0x70, 0x09);
 	cYear = inb(0x71);
-	cYear = (cYear&0x0F) + 10*((cYear&0xF0)>>4);
+	cYear = 2000 + (cYear&0x0F) + 10*((cYear&0xF0)>>4);
 
 	cprintf("Current time is: %d-%d-%d %d:%d:%d\n", cYear, cMonth, cDay, cHour, cMin, cSec);
 	return 0;
