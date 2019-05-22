@@ -38,18 +38,11 @@ umain(int argc, char **argv)
 	else
 		cprintf("init: bss seems okay\n");
 
-	cprintf("%d\n", argc);
-	cprintf("%s %s\n", argv[1], argv[2]);
-	cprintf("%p\n", args);
-
 	// output in one syscall per line to avoid output interleaving
 	strcat(args, "init: args:");
 	for (i = 0; i < argc; i++) {
-		cprintf("1\n");
 		strcat(args, " '");
-		cprintf("2\n");
 		strcat(args, argv[i]);
-		cprintf("3\n");
 		strcat(args, "'");
 	}
 	cprintf("%s\n", args);
