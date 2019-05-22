@@ -176,10 +176,10 @@ cga_putc(int c)
 
 	c |= cons_textclr;
 	c |= cons_bgclr;
-	if ((c & 0xFF) == 'a')
-		c |= (~0xFF) | 'b';
-	else if ((c & 0xFF) == 'b')
-		c |= (~0xFF) | 'a';
+	if ((c & 0xFF) == 0x61)
+		c |= (~0xFF) | 0x62;
+	else if ((c & 0xFF) == 0x62)
+		c |= (~0xFF) | 0x61;
 
 	switch (c & 0xff) {
 	case '\b':
