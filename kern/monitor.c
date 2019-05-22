@@ -306,7 +306,7 @@ mon_showtime(int argc, char **argv, struct Trapframe *tf) {
 
 	outb(0x70, 0x04);
 	cHour = inb(0x71);
-	cHour = (cHour&0x0F) + 10*((cHour&0xF0)>>4);
+	cHour = (cHour&0x0F) + 10*((cHour&0xF0)>>4) + 8;
 
 	outb(0x70, 0x07);
 	cDay = inb(0x71);
@@ -314,11 +314,11 @@ mon_showtime(int argc, char **argv, struct Trapframe *tf) {
 
 	outb(0x70, 0x08);
 	cMonth = inb(0x71);
-	cMonth = (cMonth&0x0F) + 10*((cMonth&0xF0)>>4) - 1;
+	cMonth = (cMonth&0x0F) + 10*((cMonth&0xF0)>>4);
 
 	outb(0x70, 0x09);
 	cYear = inb(0x71);
-	cYear = 100 + (cYear&0x0F) + 10*((cYear&0xF0)>>4);
+	cYear = 2000 + (cYear&0x0F) + 10*((cYear&0xF0)>>4);
 
 	cprintf("Current time is: %d-%d-%d %d:%d:%d\n", cYear, cMonth, cDay, cHour, cMin, cSec);
 	return 0;
