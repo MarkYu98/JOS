@@ -45,6 +45,7 @@ umain(int argc, char **argv)
 	// output in one syscall per line to avoid output interleaving
 	strcat(args, "init: args:");
 	for (i = 0; i < argc; i++) {
+		cprintf("%d\n", strlen(args));
 		strcat(args, " '");
 		strcat(args, argv[i]);
 		strcat(args, "'");
