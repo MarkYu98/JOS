@@ -306,7 +306,7 @@ mon_showtime(int argc, char **argv, struct Trapframe *tf) {
 
 	outb(0x70, 0x04);
 	cHour = inb(0x71);
-	cHour = (cHour&0x0F) + 10*((cHour&0xF0)>>4) + 8;
+	cHour = ((cHour&0x0F) + 10*((cHour&0xF0)>>4) + 8) % 24;
 
 	outb(0x70, 0x07);
 	cDay = inb(0x71);
