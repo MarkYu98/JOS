@@ -295,7 +295,7 @@ mon_step(int argc, char **argv, struct Trapframe *tf) {
 int
 mon_showtime(int argc, char **argv, struct Trapframe *tf) {
 	unsigned char cHour, cMin, cSec;
-　 	unsigned char cDay, cMonth, cYear;
+	unsigned char cYear, cMonth, cDay;
 	outb(0x70, 0x00);
 	cSec = inb(0x71);
 	cSec = (cSec&0x0F) + 10*((cSec&0xF0)>>4);
