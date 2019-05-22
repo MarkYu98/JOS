@@ -39,7 +39,7 @@ umain(int argc, char **argv)
 		cprintf("init: bss seems okay\n");
 
 	cprintf("%d\n", argc);
-	cprintf("%s %s\n", argv[0], argv[1]);
+	cprintf("%s %s\n", argv[1], argv[2]);
 	cprintf("%p\n", args);
 
 	// output in one syscall per line to avoid output interleaving
