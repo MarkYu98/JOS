@@ -32,7 +32,8 @@ static struct Command commands[] = {
 	{ "dumpmem", "Dump the contents of a range of memory given either a virtual or physical address range", mon_dumpmem },
 	{ "chperm", "change the permissions of any mapping", mon_chperm },
 	{ "continue", "Continue execution from a breakpoint", mon_continue },
-	{ "step", "Single step after breakpoint", mon_step }
+	{ "step", "Single step after breakpoint", mon_step },
+	{ "showtime", "Show current BIOS time", mon_showtime }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -289,6 +290,37 @@ mon_step(int argc, char **argv, struct Trapframe *tf) {
 
 	// should never reach here
 	return 0;
+}
+
+int
+mon_showtime(int argc, char **argv, struct Trapframe *tf) {
+	unsigned char cHour, cMin, cSec;
+　 	unsigned char cDay, cMonth, cYear;
+	outb(0x70, 0x00);
+	cSec = inb(0x71);
+	cSec = (cSec&0x0F) + 10*((cSec&0xF0)>>4);
+
+	outb(0x70, 0x02);
+	cMin = inb(0x71);
+	cMin = (cMin&0x0F) + 10*((cMin&0xF0)>>4);
+
+	outb(0x70, 0x04);
+	cHour = inb(0x71);
+	cHour = (cHour&0x0F) + 10*((cHour&0xF0)>>4);
+
+	outb(0x70, 0x07);
+	cDay = inb(0x71);
+	cDay = (cDay&0x0F) + 10*((cDay&0xF0)>>4);
+
+	outb(0x70, 0x08);
+	cMonth = inb(0x71);
+	cMonth = (cMonth&0x0F) + 10*((cMonth&0xF0)>>4) - 1;
+
+	outb(0x70, 0x09);
+	cYear = inb(0x71);
+	cYear = 100 + (cYear&0x0F) + 10*((cYear&0xF0)>>4);
+
+	cprintf("Current time is: %d-%d-%d %d:%d:%d\n", cYear, cMonth, cDay, cHour, cMin, cSec);
 }
 
 /***** Kernel monitor command interpreter *****/

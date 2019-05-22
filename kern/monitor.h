@@ -25,4 +25,6 @@ int mon_chperm(int argc, char **argv, struct Trapframe *tf);
 int mon_continue(int argc, char **argv, struct Trapframe *tf);
 int mon_step(int argc, char **argv, struct Trapframe *tf);
 
+int mon_showtime(int argc, char **argv, struct Trapframe *tf);
+
 #endif	// !JOS_KERN_MONITOR_H
