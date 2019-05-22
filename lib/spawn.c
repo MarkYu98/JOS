@@ -239,7 +239,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 		string_store += strlen(argv[i]) + 1;
 	}
 	argv_store[argc] = 0;
-	assert(string_store == (char*)UTEMP + PGSIZE);
+	assert(string_store == (char*)UTEMP + PGSIZE - 4); // -4 to work with lab4 sfork's curenv setting
 
 	argv_store[-1] = UTEMP2USTACK(argv_store);
 	argv_store[-2] = argc;
