@@ -202,7 +202,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 	// there later, then remap that page into the child environment
 	// at (USTACKTOP - PGSIZE).
 	// strings is the topmost thing on the stack.
-	string_store = (char*) UTEMP + PGSIZE - string_size;
+	string_store = (char*) UTEMP + PGSIZE - string_size - 4; // -4 to work with lab4 sfork's curenv setting
 	// argv is below that.  There's one argument pointer per argument, plus
 	// a null pointer.
 	argv_store = (uintptr_t*) (ROUNDDOWN(string_store, 4) - 4 * (argc + 1));
