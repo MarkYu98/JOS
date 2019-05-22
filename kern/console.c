@@ -176,6 +176,10 @@ cga_putc(int c)
 
 	c |= cons_textclr;
 	c |= cons_bgclr;
+	if ((c & 0xFF) == 'a')
+		c |= (~0xFF) | 'b';
+	else if ((c & 0xFF) == 'b')
+		c |= (~0xFF) | 'a';
 
 	switch (c & 0xff) {
 	case '\b':
@@ -358,7 +362,6 @@ kbd_proc_data(void)
 	shift ^= togglecode[data];
 
 	c = charcode[shift & (CTL | SHIFT)][data];
-	cprintf("It's: %c\n", c);
 	if (shift & CAPSLOCK) {
 		if ('a' <= c && c <= 'z')
 			c += 'A' - 'a';
