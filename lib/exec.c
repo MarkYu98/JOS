@@ -49,6 +49,7 @@ exec(const char *prog, const char **argv)
     seginfo->perm = PTE_W | PTE_U | PTE_P;
     seginfo++;
 
+    cprintf("%p\n", argv);
     if (!argv)
         return -E_INVAL;
 
