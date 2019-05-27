@@ -22,7 +22,7 @@ exec(const char *prog, const char **argv)
 
     struct SegmentInfo *seginfo = (struct SegmentInfo *) UTEMP;
     void *nextpg = ROUNDUP((void *)end, PGSIZE);
-
+    cprintf("2.0 %p\n", argv);
     // Open ELF file
     if ((r = open(prog, O_RDONLY)) < 0)
         return r;
