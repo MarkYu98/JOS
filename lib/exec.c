@@ -48,6 +48,10 @@ exec(const char *prog, const char **argv)
     seginfo->size = PGSIZE;
     seginfo->perm = PTE_W | PTE_U | PTE_P;
     seginfo++;
+
+    if (!argv)
+        return -E_INVAL;
+
     if ((r = init_stack(argv, &tf.tf_esp, &nextpg)) < 0)
         goto error;
 
@@ -89,9 +93,6 @@ init_stack(const char **argv, uintptr_t *init_esp, void **nextpgp)
     string_size = 0;
     for (argc = 0; argv[argc] != 0; argc++)
         string_size += strlen(argv[argc]) + 1;
-
-    if (argc <= 1)
-        return -E_INVAL;
 
     string_store = (char*) *nextpgp + PGSIZE - string_size - 4; // -4 to work with lab4 sfork's thisenv setting
     argv_store = (uintptr_t*) (ROUNDDOWN(string_store, 4) - 4 * (argc + 1));
