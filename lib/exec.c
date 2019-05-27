@@ -103,6 +103,8 @@ init_stack(const char **argv, uintptr_t *init_esp, void **nextpgp)
     if ((r = sys_page_alloc(0, (void*) *nextpgp, PTE_P | PTE_U | PTE_W)) < 0)
         return r;
 
+    *nextpgp += PGSIZE;
+
     for (i = 0; i < argc; i++) {
         argv_store[i] = TEMP2USTACK(string_store);
         strcpy(string_store, argv[i]);
@@ -110,7 +112,6 @@ init_stack(const char **argv, uintptr_t *init_esp, void **nextpgp)
     }
     argv_store[argc] = 0;
 
-    *nextpgp += PGSIZE;
     assert(string_store == (char*)*nextpgp - 4); // -4 to work with lab4 sfork's thisenv setting
 
     argv_store[-1] = TEMP2USTACK(argv_store);
