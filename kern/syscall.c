@@ -497,6 +497,30 @@ sys_env_set_tickets(envid_t envid, int tickets)
 	return 0;
 }
 
+// Lab5 exec challenge
+static int
+sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo)
+{
+    int i, r;
+
+    if ((r = sys_env_set_trapframe(0, tf)) < 0)
+        return r;
+
+    user_mem_assert(curenv, seginfo, PGSIZE, PTE_U | PTE_P);
+    for (; seginfo->size > 0; seginfo++) {
+        user_mem_assert(curenv, seginfo->srcva, seginfo->size, seginfo->perm);
+        for (int i = 0; i < seginfo->size; i += PGSIZE) {
+            if ((r = sys_page_map(0, seginfo->srcva + i, 0, seginfo->dstva + i,
+                    seginfo->perm)) < 0)
+                env_destroy(curenv);
+            sys_page_unmap(0, seginfo->srcva + i);
+        }
+    }
+    sys_page_unmap(0, seginfo);
+
+    return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -531,6 +555,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_env_set_tickets((envid_t) a1, (int) a2);
     case SYS_env_set_trapframe:
         return sys_env_set_trapframe((envid_t) a1, (struct Trapframe *) a2);
+    case SYS_env_load_elf:
+        return sys_env_load_elf((struct Trapframe *)a1, (struct SegmentInfo *)a2);
 	case SYS_yield:
 		sys_yield();
 	case SYS_ipc_try_send:

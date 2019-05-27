@@ -147,6 +147,13 @@ sys_env_set_tickets(envid_t envid, int tickets)
 	return sysenter(SYS_env_set_tickets, 1, envid, tickets, 0, 0);
 }
 
+// For lab5 challenge
+int
+sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo)
+{
+	return syscall(SYS_env_load_elf, 0, (uint32_t)tf, (uint32_t)seginfo, 0, 0, 0);
+}
+
 int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, int perm)
 {
