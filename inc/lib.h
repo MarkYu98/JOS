@@ -62,7 +62,7 @@ int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 
 // Lab5 exec challenge
-int sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo)
+int sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo);
 
 // This must be inlined.  Exercise for reader: why?
 static inline envid_t __attribute__((always_inline))
