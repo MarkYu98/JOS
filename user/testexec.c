@@ -5,6 +5,6 @@ void umain(int argc, char **argv)
     int r;
 
     if ((r = exec(argv[1], (const char **)&argv[1])) < 0) {
-        panic("testexec: exec fail: %e\n", r);
+        cprintf("testexec: exec fail: %e\n", r);
     }
 }
