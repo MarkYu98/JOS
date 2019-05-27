@@ -90,6 +90,9 @@ init_stack(const char **argv, uintptr_t *init_esp, void **nextpgp)
     for (argc = 0; argv[argc] != 0; argc++)
         string_size += strlen(argv[argc]) + 1;
 
+    if (argc <= 1)
+        return -E_INVAL;
+
     string_store = (char*) *nextpgp + PGSIZE - string_size - 4; // -4 to work with lab4 sfork's thisenv setting
     argv_store = (uintptr_t*) (ROUNDDOWN(string_store, 4) - 4 * (argc + 1));
 
@@ -98,8 +101,6 @@ init_stack(const char **argv, uintptr_t *init_esp, void **nextpgp)
 
     if ((r = sys_page_alloc(0, (void*) *nextpgp, PTE_P | PTE_U | PTE_W)) < 0)
         return r;
-
-
 
     for (i = 0; i < argc; i++) {
         argv_store[i] = TEMP2USTACK(string_store);
@@ -125,8 +126,6 @@ map_segment(uintptr_t va, size_t memsz, int fd, size_t filesz,
 {
     int i, r;
     void *blk;
-
-    // cprintf("map_segment %x+%x\n", va, memsz);
 
     if ((i = PGOFF(va))) {
         va -= i;
