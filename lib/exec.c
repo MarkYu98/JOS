@@ -27,7 +27,7 @@ exec(const char *prog, const char **argv)
     if ((r = open(prog, O_RDONLY)) < 0)
         return r;
     fd = r;
-
+    cprintf("2 %p\n", argv);
     // Read ELF header
     elf = (struct Elf*) elf_buf;
     if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
@@ -36,7 +36,7 @@ exec(const char *prog, const char **argv)
         cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
         return -E_NOT_EXEC;
     }
-
+    cprintf("3 %p\n", argv);
     // alloc a page for 'seginfo'
     if ((r = sys_page_alloc(0, seginfo, PTE_W | PTE_U | PTE_P)) < 0)
         return r;
@@ -52,7 +52,7 @@ exec(const char *prog, const char **argv)
     seginfo++;
 
     cprintf("0 %p\n", argv);
-    if (!argv)
+    if (!argv || !argv[0])
         return -E_INVAL;
 
     if ((r = init_stack(argv, &tf.tf_esp, &nextpg)) < 0)
