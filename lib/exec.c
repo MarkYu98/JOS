@@ -18,6 +18,8 @@ exec(const char *prog, const char **argv)
     struct Elf *elf;
     struct Proghdr *ph;
 
+    cprintf("1 %p\n", argv);
+
     struct SegmentInfo *seginfo = (struct SegmentInfo *) UTEMP;
     void *nextpg = ROUNDUP((void *)end, PGSIZE);
 
@@ -49,7 +51,7 @@ exec(const char *prog, const char **argv)
     seginfo->perm = PTE_W | PTE_U | PTE_P;
     seginfo++;
 
-    cprintf("%p\n", argv);
+    cprintf("0 %p\n", argv);
     if (!argv)
         return -E_INVAL;
 
