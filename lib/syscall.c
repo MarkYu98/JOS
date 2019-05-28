@@ -67,8 +67,8 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 void
 sys_cputs(const char *s, size_t len)
 {
-	// syscall(SYS_cputs, 0, (uint32_t)s, len, 0, 0, 0);
-	sysenter(SYS_cputs, 0, (uint32_t)s, len, 0, 0);
+	syscall(SYS_cputs, 0, (uint32_t)s, len, 0, 0, 0);
+	// sysenter(SYS_cputs, 0, (uint32_t)s, len, 0, 0);
 }
 
 int
