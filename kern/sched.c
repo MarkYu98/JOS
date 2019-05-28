@@ -85,6 +85,7 @@ sched_yield(void)
 	for (int i = 0; i < cur_env_id; i++)
 		if (envs[i].env_status == ENV_RUNNABLE)
 			env_run(&envs[i]);
+
 	if (cur_env_id >= 0 && envs[cur_env_id].env_status == ENV_RUNNING)
 		env_run(&envs[cur_env_id]);
 
