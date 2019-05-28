@@ -74,22 +74,22 @@ sys_cputs(const char *s, size_t len)
 int
 sys_cgetc(void)
 {
-	// return syscall(SYS_cgetc, 0, 0, 0, 0, 0, 0);
-	return sysenter(SYS_cgetc, 0, 0, 0, 0, 0);
+	return syscall(SYS_cgetc, 0, 0, 0, 0, 0, 0);
+	// return sysenter(SYS_cgetc, 0, 0, 0, 0, 0);
 }
 
 int
 sys_env_destroy(envid_t envid)
 {
-	// return syscall(SYS_env_destroy, 1, envid, 0, 0, 0, 0);
-	return sysenter(SYS_env_destroy, 1, envid, 0, 0, 0);
+	return syscall(SYS_env_destroy, 1, envid, 0, 0, 0, 0);
+	// return sysenter(SYS_env_destroy, 1, envid, 0, 0, 0);
 }
 
 envid_t
 sys_getenvid(void)
 {
-	// return syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
-	return sysenter(SYS_getenvid, 0, 0, 0, 0, 0);
+	return syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
+	// return sysenter(SYS_getenvid, 0, 0, 0, 0, 0);
 }
 
 void
@@ -101,8 +101,8 @@ sys_yield(void)
 int
 sys_page_alloc(envid_t envid, void *va, int perm)
 {
-	// return syscall(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0, 0);
-	return sysenter(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0);
+	return syscall(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0, 0);
+	// return sysenter(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0);
 }
 
 int
@@ -114,8 +114,8 @@ sys_page_map(envid_t srcenv, void *srcva, envid_t dstenv, void *dstva, int perm)
 int
 sys_page_unmap(envid_t envid, void *va)
 {
-	// return syscall(SYS_page_unmap, 1, envid, (uint32_t) va, 0, 0, 0);
-	return sysenter(SYS_page_unmap, 1, envid, (uint32_t) va, 0, 0);
+	return syscall(SYS_page_unmap, 1, envid, (uint32_t) va, 0, 0, 0);
+	// return sysenter(SYS_page_unmap, 1, envid, (uint32_t) va, 0, 0);
 }
 
 // sys_exofork is inlined in lib.h
@@ -123,8 +123,8 @@ sys_page_unmap(envid_t envid, void *va)
 int
 sys_env_set_status(envid_t envid, int status)
 {
-	// return syscall(SYS_env_set_status, 1, envid, status, 0, 0, 0);
-	return sysenter(SYS_env_set_status, 1, envid, status, 0, 0);
+	return syscall(SYS_env_set_status, 1, envid, status, 0, 0, 0);
+	// return sysenter(SYS_env_set_status, 1, envid, status, 0, 0);
 }
 
 int
@@ -136,8 +136,8 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 int
 sys_env_set_pgfault_upcall(envid_t envid, void *upcall)
 {
-	// return syscall(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
-	return sysenter(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0);
+	return syscall(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
+	// return sysenter(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0);
 }
 
 int
