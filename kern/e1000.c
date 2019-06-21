@@ -1,8 +1,8 @@
 #include <kern/e1000.h>
 #include <kern/pmap.h>
 #include <kern/pci.h>
-#include <kern/string.h>
-#include <kern/error.h>
+#include <inc/string.h>
+#include <inc/error.h>
 
 // LAB 6: Your driver code here
 

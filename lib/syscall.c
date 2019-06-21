@@ -176,5 +176,5 @@ sys_time_msec(void)
 int
 sys_transmit(void *buffer, uint32_t length)
 {
-	return syscall(SYS_transmit, 0, (uint32_t)buffer, length, 0, 0, 0, 0);
+	return syscall(SYS_transmit, 0, (uint32_t)buffer, length, 0, 0, 0);
 }
