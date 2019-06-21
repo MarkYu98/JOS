@@ -29,25 +29,25 @@ e1000_attach(struct pci_func *pcif)
     e1000[E1000_TDLEN >> 2] = sizeof(tx_desc_array);
 
     // TCTL Reg: 32| Reserved 26| CNTL Bits 22| COLD 12| CT 4| CNTL Bits 0|
-    e1000[E1000_TCTL] = (0x40 << 12) | (0x10 << 4) | 0x8 | 0x2;
+    e1000[E1000_TCTL >> 2] = (0x40 << 12) | (0x10 << 4) | 0x8 | 0x2;
 
     // TIPG Reg: 32| Reserved 30| IPGR2 20| IPGR1 10| IPGT 0|
-    e1000[E1000_TIPG] = (6 << 20) | (8 << 10) | 10;
+    e1000[E1000_TIPG >> 2] = (6 << 20) | (8 << 10) | 10;
 
     // Receive Init
     // MAC: 52:54:00:12:34:56
     e1000[E1000_RA >> 2] = 0x12005452;
     e1000[(E1000_RA >> 2) + 1] = 0x80005634;
     e1000[E1000_MTA >> 2] = 0;
-    e1000[E1000_IMS] = 0;
-    e1000[E1000_RDBAL] = PADDR(rx_desc_array);
-    e1000[E1000_RDLEN] = sizeof(rx_desc_array);
-    e1000[E1000_RDH] = 0;
-    e1000[E1000_RDT] = N_RX_DESC - 1;
+    e1000[E1000_IMS >> 2] = 0;
+    e1000[E1000_RDBAL >> 2] = PADDR(rx_desc_array);
+    e1000[E1000_RDLEN >> 2] = sizeof(rx_desc_array);
+    e1000[E1000_RDH >> 2] = 0;
+    e1000[E1000_RDT >> 2] = N_RX_DESC - 1;
     for (int i = 0; i < N_RX_DESC; i++)
         rx_desc_array[i].addr = PADDR(rx_packet_buffer[i]);
 
-    e1000[E1000_RCTL] = E1000_RCTL_EN | E1000_RCTL_RDMTS_HALF | E1000_RCTL_BAM |
+    e1000[E1000_RCTL >> 2] = E1000_RCTL_EN | E1000_RCTL_RDMTS_HALF | E1000_RCTL_BAM |
                         E1000_RCTL_SZ_2048 | E1000_RCTL_SECRC;
 
     return 1;
@@ -74,7 +74,7 @@ e1000_transmit(void *buffer, uint32_t length)
 
     if (++tdt >= N_TX_DESC)
         tdt = 0;
-    e1000[E1000_TDT] = tdt;
+    e1000[E1000_TDT >> 2] = tdt;
 
     return 0;
 }
@@ -95,6 +95,6 @@ e1000_receive(void *buffer)
     memcpy(buffer, KADDR(rx_desc_array[rdt].addr), length);
     rx_desc_array[rdt].status = 0;
 
-    e1000[E1000_RDT] = rdt;
+    e1000[E1000_RDT >> 2] = rdt;
     return length;
 }
