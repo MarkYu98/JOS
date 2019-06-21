@@ -170,5 +170,5 @@ sys_ipc_recv(void *dstva)
 unsigned int
 sys_time_msec(void)
 {
-	return (unsigned int) syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
+	return (unsigned int) sysenter(SYS_time_msec, 0, 0, 0, 0, 0);
 }
