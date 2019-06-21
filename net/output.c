@@ -27,7 +27,7 @@ output(envid_t ns_envid)
             continue;
         while (true) {
             pkt = (struct jif_pkt*) REQVA;
-            r = sys_transmit((void *)pkt->jp_data, pkt->jp_len);
+            r = sys_pkt_transmit((void *)pkt->jp_data, pkt->jp_len);
             if (!r)
                 break;
             if (r != E_QUEUE_FULL)

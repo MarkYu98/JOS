@@ -27,7 +27,9 @@ enum {
 	E_NOT_EXEC	,	// File not a valid executable
 	E_NOT_SUPP	,	// Operation not supported
 
-	E_QUEUE_FULL, 	// Queue full
+	// Lab 6: e1000 transmit & receive
+	E_QUEUE_FULL, 	// Transmit queue full
+	E_QUEUE_EMPTY, 	// Receive queue empty
 
 	MAXERROR
 };
