@@ -24,13 +24,14 @@
 #include <inc/ns.h>
 
 #define USED(x)		(void)(x)
+#define thisenv     (*((const volatile struct Env **) (USTACKTOP - 4)))
 
 // main user program
 void	umain(int argc, char **argv);
 
 // libmain.c or entry.S
 extern const char *binaryname;
-extern const volatile struct Env *thisenv;
+// extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 
@@ -53,6 +54,8 @@ static envid_t sys_exofork(void);
 int	sys_env_set_status(envid_t env, int status);
 int	sys_env_set_trapframe(envid_t env, struct Trapframe *tf);
 int	sys_env_set_pgfault_upcall(envid_t env, void *upcall);
+// Lab4 lottery scheduling challenge
+int sys_env_set_tickets(envid_t env, int tickets);
 int	sys_page_alloc(envid_t env, void *pg, int perm);
 int	sys_page_map(envid_t src_env, void *src_pg,
 		     envid_t dst_env, void *dst_pg, int perm);
@@ -60,6 +63,9 @@ int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 unsigned int sys_time_msec(void);
+
+// Lab5 exec challenge
+int sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo);
 
 // This must be inlined.  Exercise for reader: why?
 static inline envid_t __attribute__((always_inline))
@@ -124,6 +130,9 @@ int     nsipc_socket(int domain, int type, int protocol);
 // spawn.c
 envid_t	spawn(const char *program, const char **argv);
 envid_t	spawnl(const char *program, const char *arg0, ...);
+
+// exec.c
+int exec(const char *program, const char **argv);
 
 // console.c
 void	cputchar(int c);

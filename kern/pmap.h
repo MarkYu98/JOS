@@ -17,6 +17,7 @@ extern size_t npages;
 
 extern pde_t *kern_pgdir;
 
+extern bool PSE_enabled; // For lab2 challenge to work with lab4
 
 /* This macro takes a kernel virtual address -- an address that points above
  * KERNBASE, where the machine's maximum 256MB of physical memory is mapped --
@@ -51,6 +52,7 @@ enum {
 	ALLOC_ZERO = 1<<0,
 };
 
+void 	enable_PS_percpu(void);
 void	mem_init(void);
 
 void	page_init(void);

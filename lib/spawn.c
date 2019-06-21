@@ -202,7 +202,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 	// there later, then remap that page into the child environment
 	// at (USTACKTOP - PGSIZE).
 	// strings is the topmost thing on the stack.
-	string_store = (char*) UTEMP + PGSIZE - string_size;
+	string_store = (char*) UTEMP + PGSIZE - string_size - 4; // -4 to work with lab4 sfork's thisenv setting
 	// argv is below that.  There's one argument pointer per argument, plus
 	// a null pointer.
 	argv_store = (uintptr_t*) (ROUNDDOWN(string_store, 4) - 4 * (argc + 1));
@@ -239,7 +239,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 		string_store += strlen(argv[i]) + 1;
 	}
 	argv_store[argc] = 0;
-	assert(string_store == (char*)UTEMP + PGSIZE);
+	assert(string_store == (char*)UTEMP + PGSIZE - 4); // -4 to work with lab4 sfork's thisenv setting
 
 	argv_store[-1] = UTEMP2USTACK(argv_store);
 	argv_store[-2] = argc;
@@ -302,6 +302,16 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	int r;
+
+	for (uintptr_t va = 0; va < UTOP; va += PGSIZE) {
+		if ((uvpd[PDX(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_SHARE) &&
+			(uvpt[PGNUM(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_U)) {
+			int perm = uvpt[PGNUM(va)] & PTE_SYSCALL;
+			if ((r = sys_page_map(0, (void *)va, child, (void *)va, perm)) < 0)
+				return r;
+		}
+	}
 	return 0;
 }
 

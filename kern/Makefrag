@@ -61,7 +61,8 @@ KERN_BINFILES :=	user/hello \
 			user/faultread \
 			user/faultreadkernel \
 			user/faultwrite \
-			user/faultwritekernel
+			user/faultwritekernel \
+			user/singlestep
 
 # Binary files for LAB4
 KERN_BINFILES +=	user/idle \
@@ -81,7 +82,10 @@ KERN_BINFILES +=	user/idle \
 			user/fairness \
 			user/pingpong \
 			user/pingpongs \
-			user/primes
+			user/primes \
+			user/fputest \
+			user/lottery
+
 # Binary files for LAB5
 KERN_BINFILES +=	user/faultio\
 	      		user/spawnfaultio\

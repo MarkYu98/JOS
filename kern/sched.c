@@ -4,14 +4,35 @@
 #include <kern/env.h>
 #include <kern/pmap.h>
 #include <kern/monitor.h>
+#define SEED 	1857460923
 
 void sched_halt(void);
+
+// Lab4 lottery scheduling challenge
+static bool use_lottery = false;
+static unsigned next = 1;
+static unsigned rand()
+{
+	next = next * 1103515245 + 12345;
+	return next;
+}
+
+void srand(unsigned seed)
+{
+	next = seed;
+}
+
+void lottery_sched_init()
+{
+	use_lottery = true;
+	srand(SEED);
+}
 
 // Choose a user environment to run and run it.
 void
 sched_yield(void)
 {
-	struct Env *idle;
+	// struct Env *idle;
 
 	// Implement simple round-robin scheduling.
 	//
@@ -30,6 +51,43 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	int cur_env_id = -1;
+	if (curenv)
+		cur_env_id = ENVX(curenv->env_id);
+
+	if (use_lottery) {
+		int total_tickets = 0;
+		for (int i = 0; i < NENV; i++)
+			if (envs[i].env_status == ENV_RUNNABLE ||
+				(i == cur_env_id && envs[i].env_status == ENV_RUNNING))
+				total_tickets += envs[i].env_tickets;
+
+		if (total_tickets == 0) // Nothing runnable
+			sched_halt();
+
+		int draw = rand() % total_tickets;
+		total_tickets = 0;
+		for (int i = 0; i < NENV; i++)
+			if (envs[i].env_status == ENV_RUNNABLE ||
+				(i == cur_env_id && envs[i].env_status == ENV_RUNNING)) {
+				total_tickets += envs[i].env_tickets;
+				if (total_tickets >= draw)
+					env_run(&envs[i]);
+			}
+
+		// sched_halt never returns
+		sched_halt();
+	}
+
+	for (int i = cur_env_id + 1; i < NENV; i++)
+		if (envs[i].env_status == ENV_RUNNABLE)
+			env_run(&envs[i]);
+	for (int i = 0; i < cur_env_id; i++)
+		if (envs[i].env_status == ENV_RUNNABLE)
+			env_run(&envs[i]);
+
+	if (cur_env_id >= 0 && envs[cur_env_id].env_status == ENV_RUNNING)
+		env_run(&envs[cur_env_id]);
 
 	// sched_halt never returns
 	sched_halt();
@@ -76,7 +134,7 @@ sched_halt(void)
 		"pushl $0\n"
 		"pushl $0\n"
 		// Uncomment the following line after completing exercise 13
-		//"sti\n"
+		"sti\n"
 		"1:\n"
 		"hlt\n"
 		"jmp 1b\n"

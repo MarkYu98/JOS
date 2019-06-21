@@ -29,6 +29,9 @@ typedef int32_t envid_t;
 #define NENV			(1 << LOG2NENV)
 #define ENVX(envid)		((envid) & (NENV - 1))
 
+// Lab4 lottery scheduling challenge
+#define ENV_DEFAULT_TICKETS	5
+
 // Values of env_status in struct Env
 enum {
 	ENV_FREE = 0,
@@ -47,7 +50,7 @@ enum EnvType {
 
 struct Env {
 	struct Trapframe env_tf;	// Saved registers
-	struct Env *env_link;		// Next free Env
+	struct Env *env_link;		// Next free Env or next in sender_list
 	envid_t env_id;			// Unique environment identifier
 	envid_t env_parent_id;		// env_id of this env's parent
 	enum EnvType env_type;		// Indicates special system environments
@@ -61,12 +64,20 @@ struct Env {
 	// Exception handling
 	void *env_pgfault_upcall;	// Page fault upcall entry point
 
+	// Lab 4 FPU Challenge: fxsave
+	char fxsave[512] __attribute__((aligned(16)));
+
 	// Lab 4 IPC
 	bool env_ipc_recving;		// Env is blocked receiving
-	void *env_ipc_dstva;		// VA at which to map received page
-	uint32_t env_ipc_value;		// Data value sent to us
+	bool env_ipc_sending;		// Env is blocked sending, for non-loop ipc_send challenge
+	void *env_ipc_va;			// VA of sended page or at which to map received page
+	uint32_t env_ipc_value;		// Data value to send or received
 	envid_t env_ipc_from;		// envid of the sender
 	int env_ipc_perm;		// Perm of page mapping received
+	struct Env *sender_list_head, *sender_list_tail;	// for non-loop ipc_send challenge
+
+	// Lab4 lottery scheduling challenge
+	int env_tickets;
 };
 
 #endif // !JOS_INC_ENV_H
