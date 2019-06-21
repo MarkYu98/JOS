@@ -63,6 +63,7 @@ int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 int sys_pkt_transmit(void *buffer, uint32_t length);
+int sys_pkt_receive(void *buffer);
 unsigned int sys_time_msec(void);
 
 // Lab5 exec challenge

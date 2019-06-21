@@ -178,3 +178,9 @@ sys_pkt_transmit(void *buffer, uint32_t length)
 {
 	return syscall(SYS_pkt_transmit, 0, (uint32_t)buffer, length, 0, 0, 0);
 }
+
+int
+sys_pkt_receive(void *buffer)
+{
+	return syscall(SYS_pkt_receive, 0, (uint32_t)buffer, 0, 0, 0, 0);
+}
