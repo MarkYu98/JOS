@@ -12,6 +12,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 #include <kern/time.h>
+#include <kern/e1000.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -530,6 +531,17 @@ sys_env_load_elf(struct Trapframe *tf, struct SegmentInfo *seginfo)
     return 0;
 }
 
+static int
+sys_transmit(void *buffer, uint32_t length)
+{
+    int r = user_mem_check(curenv, buffer, length, PTE_U | PTE_P);
+    if (r < 0)
+        return r;
+    if (length > MAX_PACKET_SIZE)
+        return -E_INVAL;
+    return e1000_transmit(buffer, length);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -574,6 +586,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_ipc_try_send((envid_t) a1, (uint32_t) a2, (void *) a3, (unsigned) a4);
 	case SYS_ipc_recv:
 		return sys_ipc_recv((void *) a1);
+    case SYS_transmit:
+        return sys_transmit((void *) a1, (uint32_t) a2)
 	default:
 		return -E_INVAL;
 	}

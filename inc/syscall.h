@@ -20,6 +20,7 @@ enum {
 	SYS_ipc_recv,
 	SYS_env_load_elf,
 	SYS_time_msec,
+	SYS_transmit,
 	NSYSCALLS
 };
 

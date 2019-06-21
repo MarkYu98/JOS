@@ -1,6 +1,8 @@
 #include <kern/e1000.h>
 #include <kern/pmap.h>
 #include <kern/pci.h>
+#include <kern/string.h>
+#include <kern/error.h>
 
 // LAB 6: Your driver code here
 
@@ -60,4 +62,30 @@ e1000_attach(struct pci_func *pcif)
     e1000[E1000_TIPG] = (6 << 20) | (8 << 10) | 10;
 
     return 1;
+}
+
+// Return 0 on success, -E_QUEUE_FULL when transmit queue is full
+int
+e1000_transmit(void *buffer, uint32_t length)
+{
+    uint32_t tdt = e1000[E1000_TDT];
+    struct tx_desc *nxt_desc = &tx_desc_array[tdt];
+
+    if ((nxt_desc->cmd & E1000_TXD_CMD_RS) &&
+        !(nxt_desc->status & E1000_TXD_STAT_DD)) {
+        // Queue Full!
+        return -E_QUEUE_FULL;
+    }
+
+    memcpy(tx_packet_buffer[tdt], buffer, length);
+    nxt_desc->addr = PADDR(tx_packet_buffer[tdt]);
+    nxt_desc->length = (uint16_t) length;
+    nxt_desc->cmd |= E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
+    nxt_desc->status &= ~E1000_TXD_STAT_DD;
+
+    if (++tdt >= N_TX_DESC)
+        tdt = 0;
+    e1000[E1000_TDT] = tdt;
+
+    return 0;
 }
