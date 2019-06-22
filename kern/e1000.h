@@ -26,7 +26,14 @@
 #define E1000_RDH      0x02810 /* RX Descriptor Head - RW */
 #define E1000_RDT      0x02818 /* RX Descriptor Tail - RW */
 #define E1000_MTA      0x05200 /* Multicast Table Array - RW Array */
-#define E1000_RA       0x05400 /* Receive Address - RW Array */
+#define E1000_RAL      0x05400 /* Receive Address - RW Array */
+#define E1000_RAH      0x05404 /* Receive Address - RW Array */
+#define E1000_RAH_AV   0x80000000        /* Receive descriptor valid */
+
+
+/* EERD Register for Lab 6 Challenge */
+#define E1000_EERD          0x00014  /* EEPROM Read - RW */
+#define E1000_EERD_DONE     (1 << 4)  /* EEPROM Read - RW */
 
 /* Receive Control */
 #define E1000_RCTL_RST            0x00000001    /* Software reset */
@@ -107,5 +114,6 @@ struct rx_desc {
 int e1000_attach(struct pci_func *pcif);
 int e1000_transmit(void *buffer, uint32_t length);
 ssize_t e1000_receive(void *buffer);
+int e1000_get_mac_addr(uint8_t *mac_addr_save);
 
 #endif  // SOL >= 6

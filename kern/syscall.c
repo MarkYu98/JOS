@@ -552,6 +552,12 @@ sys_pkt_receive(void *buffer)
     return e1000_receive(buffer);
 }
 
+static int
+sys_get_mac_addr(uint8_t *mac_addr_save)
+{
+    return e1000_get_mac_addr(mac_addr_save);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -600,6 +606,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         return sys_pkt_transmit((void *) a1, (uint32_t) a2);
     case SYS_pkt_receive:
         return sys_pkt_receive((void *) a1);
+    case SYS_get_mac_addr:
+        return sys_get_mac_addr((uint8_t *) a1);
 	default:
 		return -E_INVAL;
 	}

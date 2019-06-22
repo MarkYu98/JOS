@@ -64,6 +64,7 @@ int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 int sys_pkt_transmit(void *buffer, uint32_t length);
 int sys_pkt_receive(void *buffer);
+int sys_get_mac_addr(uint8_t *mac_addr_save);
 unsigned int sys_time_msec(void);
 
 // Lab5 exec challenge

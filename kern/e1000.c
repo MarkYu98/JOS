@@ -4,11 +4,11 @@
 #include <inc/string.h>
 #include <inc/error.h>
 
-#define REG(name) e1000[E1000_##name / 4]
-#define REGARRAY(name, index) e1000[E1000_##name / 4 + (index)]
-
 // LAB 6: Your driver code here
 volatile uint32_t *e1000;
+
+// For Lab 6 challenges
+uint8_t e1000_mac_addr[6];
 
 __attribute__((__aligned__(16)))
 struct tx_desc tx_desc_array[N_TX_DESC];
@@ -38,9 +38,23 @@ e1000_attach(struct pci_func *pcif)
     e1000[E1000_TIPG >> 2] = (6 << 20) | (8 << 10) | 10;
 
     // Receive Init
-    // MAC: 52:54:00:12:34:56
-    e1000[E1000_RA >> 2] = 0x12005452;
-    e1000[(E1000_RA >> 2) + 1] = 0x80005634;
+    // Configure MAC Address: Lab 6 challenge
+    for (int i = 0; i < 3; i++) {
+        e1000[E1000_EERD >> 2] = (i << 8) | 1;
+        while (!(e1000[E1000_EERD >> 2] & E1000_EERD_DONE));
+        e1000_mac_addr[2 * i] = (e1000[E1000_EERD >> 2] & 0x00ff0000) >> 16;
+        e1000_mac_addr[2 * i + 1] = (e1000[E1000_EERD >> 2] & 0xff000000) >> 24;
+        e1000[E1000_EERD >> 2] &= (~E1000_EERD_DONE);
+    }
+
+    // cprintf("Read MAC address: ");
+    // for (int i = 0; i < 6; i++)
+    //     cprintf("%x:", e1000_mac_addr[i]);
+    // cprintf("\n");
+
+    e1000[E1000_RAL >> 2] = *(uint32_t*)e1000_mac_addr;
+    e1000[E1000_RAH >> 2] = (*(uint32_t*)(e1000_mac_addr + 4)) | E1000_RAH_AV;
+
     e1000[E1000_MTA >> 2] = 0;
     e1000[E1000_IMS >> 2] = 0;
     e1000[E1000_RDBAL >> 2] = PADDR(rx_desc_array);
@@ -99,4 +113,12 @@ e1000_receive(void *buffer)
 
     e1000[E1000_RDT >> 2] = rdt;
     return length;
+}
+
+// For lab 6 challenge
+int
+e1000_get_mac_addr(uint8_t *mac_addr_save)
+{
+    memcpy(mac_addr_save, e1000_mac_addr, 6);
+    return 1;
 }

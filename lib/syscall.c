@@ -184,3 +184,9 @@ sys_pkt_receive(void *buffer)
 {
 	return syscall(SYS_pkt_receive, 0, (uint32_t)buffer, 0, 0, 0, 0);
 }
+
+int
+sys_get_mac_addr(uint8_t *mac_addr_save)
+{
+	return sysenter(SYS_get_mac_addr, 0, (uint32_t) mac_addr_save, 0, 0, 0);
+}
